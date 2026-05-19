@@ -12,6 +12,11 @@ typedef minizero::env::amazons::AmazonsEnvLoader EnvironmentLoader;
 typedef minizero::env::atari::AtariAction Action;
 typedef minizero::env::atari::AtariEnv Environment;
 typedef minizero::env::atari::AtariEnvLoader EnvironmentLoader;
+#elif SHOGI
+#include "shogi.h"
+typedef minizero::env::shogi::ShogiAction Action;
+typedef minizero::env::shogi::ShogiEnv Environment;
+typedef minizero::env::shogi::ShogiEnvLoader EnvironmentLoader;
 #elif BREAKTHROUGH
 #include "breakthrough.h"
 typedef minizero::env::breakthrough::BreakthroughAction Action;
@@ -136,6 +141,8 @@ inline void setUpEnv()
 #elif ATARI
     config::learner_n_step_return = 10;
     config::zero_actor_intermediate_sequence_length = 200;
+#elif SHOGI
+    config::env_board_size = 9;
 #elif BREAKTHROUGH
     config::env_board_size = 8;
 #elif CLOBBER
