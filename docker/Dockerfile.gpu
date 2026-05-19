@@ -50,6 +50,7 @@ RUN python3 -m pip install --no-cache-dir \
 RUN python3 -m pip install --no-cache-dir pybind11==3.0.4
 # install timm for vision transformers(for ResTNet)
 RUN pip install timm
+RUN pip install einops
 
 ENV Torch_DIR=/usr/local/lib/python3.10/dist-packages/torch/share/cmake/Torch
 ENV pybind11_DIR=/usr/local/lib/python3.10/dist-packages/pybind11/share/cmake/pybind11
