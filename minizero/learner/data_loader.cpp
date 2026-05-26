@@ -216,6 +216,13 @@ void DataLoader::initialize()
 void DataLoader::loadDataFromFile(const std::string& file_name)
 {
     std::ifstream fin(file_name, std::ifstream::in);
+    
+    // ファイルが開けなかったら警告を出して中断する
+    if (!fin.is_open()) {
+        std::cerr << "[Warning] Data file not found or cannot be opened: " << file_name << std::endl;
+        return;
+    }
+
     for (std::string content; std::getline(fin, content);) { getSharedData()->env_strings_.push_back(content); }
 
     for (auto& t : slave_threads_) { t->start(); }

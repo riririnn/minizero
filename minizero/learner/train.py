@@ -40,6 +40,7 @@ class MinizeroDadaLoader:
     def load_data(self, training_dir, start_iter, end_iter):
         for i in range(start_iter, end_iter + 1):
             file_name = f"{training_dir}/sgf/{i}.sgf"
+            print(f"[DEBUG] Trying to load data file: {file_name}", flush=True)
             if file_name in self.data_list:
                 continue
             self.data_loader.load_data_from_file(file_name)
