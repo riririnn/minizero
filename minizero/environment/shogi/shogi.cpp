@@ -111,7 +111,22 @@ bool ShogiEnv::isLegalAction(const ShogiAction& action) const {
 }
 
 bool ShogiEnv::isTerminal() const {
-    return winner_ != GameResult::UNDECIDED;
+    // 1. すでに勝敗が決まっているなら当然終了
+    if (winner_ != GameResult::UNDECIDED) {
+        return true;
+    }
+
+    // 2. 合法手が0なら、ルール上「詰み」なので終了
+    if (legal_action_.none()) {
+        return true;
+    }
+
+    // 3. 千日手の判定（本来は step() や makeMove() のタイミングで 
+    //    history をチェックし、千日手なら winner_ を更新しておくのがのがよいとおもう
+    //    ここでは isTerminal が呼ぶべきか検討が必要
+    // TODO: if no legal actions, the game is over (checkmate or stalemate)
+    return false;
+    //     return winner_ != GameResult::UNDECIDED;
 }
 
 float ShogiEnv::getEvalScore(bool is_resign) const {

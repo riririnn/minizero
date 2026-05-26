@@ -16,7 +16,7 @@ usage()
 }
 
 image_name=kds285/minizero:latest
-container_tool=$(basename $(which podman || which docker) 2>/dev/null)
+container_tool=$(basename $(which docker || which podman) 2>/dev/null)
 if [[ ! $container_tool ]]; then
 	echo "Neither podman nor docker is installed." >&2
 	exit 1
