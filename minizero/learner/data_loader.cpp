@@ -5,7 +5,10 @@
 #include "rotation.h"
 #include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <stdexcept>
 #include <utility>
+#include <numeric>
 
 namespace minizero::learner {
 
@@ -59,6 +62,12 @@ std::pair<int, int> ReplayBuffer::sampleEnvAndPos()
 
 int ReplayBuffer::sampleIndex(const std::deque<float>& weight)
 {
+// 合計が 0 以下なら 0 を返す（std::discrete_distributionのクラッシュ回避）
+    float sum = std::accumulate(weight.begin(), weight.end(), 0.0f);
+    if (weight.empty() || sum <= 0.0f) {
+        return 0;
+    }
+
     std::discrete_distribution<> dis(weight.begin(), weight.end());
     return dis(Random::generator_);
 }
@@ -111,7 +120,15 @@ bool DataLoaderThread::addEnvironmentLoader()
     if (env_string.empty()) { return false; }
 
     EnvironmentLoader env_loader;
-    if (env_loader.loadFromString(env_string)) { getSharedData()->replay_buffer_.addData(env_loader); }
+    try {
+        if (env_loader.loadFromString(env_string)) { getSharedData()->replay_buffer_.addData(env_loader); }
+    } catch (const std::length_error& e) {
+        std::cerr << "[Parse Error] length_error caught. SGF string might be corrupted." << std::endl;
+        std::cerr << "Exact error: " << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[Parse Error] exception caught while parsing SGF data." << std::endl;
+        std::cerr << "Exact error: " << e.what() << std::endl;
+    }
     return true;
 }
 
