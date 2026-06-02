@@ -1,5 +1,9 @@
 #!/bin/bash
 
+script_dir="$(dirname $(readlink -f "$0"))"
+repo_root="${script_dir}/.."
+cd "$repo_root"
+
 env_cmakelists="$(dirname $(readlink -f "$0"))/../minizero/environment/CMakeLists.txt"
 support_games=($(awk '/target_include_directories/,/\)/' ${env_cmakelists} | sed 's|/|\n|g' | grep -v -E 'target|environment|PUBLIC|CMAKE_CURRENT_SOURCE_DIR|base|stochastic|)'))
 
@@ -211,7 +215,7 @@ done
 
 # ================================ SETUP ================================
 
-git_info=$(git describe --abbrev=6 --dirty --always --exclude '*' 2>/dev/null || echo xxxxxx)
+git_info=$(git -C "$repo_root" describe --abbrev=6 --dirty --always --exclude '*' 2>/dev/null || echo xxxxxx)
 session_name=minizero_$game.$git_info.$mode.$(date '+%Y%m%d%H%M%S')
 log INFO "MiniZero quick-run session: $session_name"
 

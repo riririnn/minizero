@@ -165,8 +165,8 @@ do
 					var=(${BASH_REMATCH[1]})
 					CONF_FILE=$(ls ${var[0]}/*.cfg)
 					# format: py/Train.py train_dir conf_file
-					logAndSend "CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python ${op_executable_file} ${game_type} ${var[0]} ${CONF_FILE}"
-					CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python ${op_executable_file} ${game_type} ${var[0]} ${CONF_FILE} 0<&$broker_fd 1>&$broker_fd 2> >(tee -a ${var[0]}/op.log >&2)
+					logAndSend "CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python -X faulthandler -u ${op_executable_file} ${game_type} ${var[0]} ${CONF_FILE}"
+					CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python -X faulthandler -u ${op_executable_file} ${game_type} ${var[0]} ${CONF_FILE} 0<&$broker_fd 1>&$broker_fd 2> >(tee -a ${var[0]}/op.log >&2)
 				else
 					echo "read format error"
 					echo "msg: $line"

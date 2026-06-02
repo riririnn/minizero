@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+script_dir="$(dirname $(readlink -f "$0"))"
+repo_root="${script_dir}/.."
+cd "$repo_root"
+
 env_cmakelists="$(dirname $(readlink -f "$0"))/../minizero/environment/CMakeLists.txt"
 support_games=($(awk '/target_include_directories/,/\)/' ${env_cmakelists} | sed 's|/|\n|g' | grep -v -E 'target|environment|PUBLIC|CMAKE_CURRENT_SOURCE_DIR|base|stochastic|)'))
 
@@ -40,8 +44,8 @@ build_game() {
 	fi
 
 	# create git info file
-	git_hash=$(git log -1 --format=%H)
-	git_short_hash=$(git describe --abbrev=6 --dirty --always --exclude '*')
+	git_hash=$(git -C "$repo_root" log -1 --format=%H 2>/dev/null || echo xxxxxxx)
+	git_short_hash=$(git -C "$repo_root" describe --abbrev=6 --dirty --always --exclude '*' 2>/dev/null || echo xxxxxx)
 	mkdir -p git_info
 	git_info=$(echo -e "#pragma once\n\n#define GIT_HASH \"${git_hash}\"\n#define GIT_SHORT_HASH \"${git_short_hash}\"")
 	if [ ! -f git_info/git_info.h ] || [ $(diff -q <(echo "${git_info}") <(cat git_info/git_info.h) | wc -l 2>/dev/null) -ne 0 ]; then
@@ -54,7 +58,7 @@ build_game() {
 }
 
 # add environment settings
-git config core.hooksPath .githooks
+git -C "$repo_root" config core.hooksPath .githooks 2>/dev/null || true
 
 game_type=${1:-all}
 build_type=${2:-release}
