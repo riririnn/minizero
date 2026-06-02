@@ -32,6 +32,13 @@ public:
         assert(action_string_args[0].size() == 1);
         player_ = charToPlayer(action_string_args[0][0]);
         assert(static_cast<int>(player_) > 0 && static_cast<int>(player_) <= kShogiNumPlayer);
+
+        // 🌟 追加: SGFから抜き出された数字を、行動IDとしてセットする
+        if (!action_string_args[1].empty() && action_string_args[1] != "PASS") {
+            action_id_ = std::stoi(action_string_args[1]);
+        } else {
+            action_id_ = -1;
+        }
     }
 
     inline Player nextPlayer() const override { return getNextPlayer(player_, kShogiNumPlayer); }

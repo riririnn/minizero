@@ -58,7 +58,19 @@ bool SGFLoader::loadFromString(const std::string& content)
                 } else { // ready to store key-value pair
                     if (accept_move) {
                         if (board_size == -1) { return false; }
-                        actions_.emplace_back().first = SGFAction(key, actionIDToBoardCoordinateString(sgfStringToActionID(value, board_size), board_size));
+
+                        // 🌟 ここから変更（将棋用の数字ID対応）
+                        std::string action_str;
+                        if (!value.empty() && value[0] >= '0' && value[0] <= '9') {
+                            // 数字から始まる場合（将棋など）は、変換せずにそのまま渡す
+                            action_str = value;
+                        } else {
+                            // 囲碁などのアルファベット2文字の場合は従来通り変換する
+                            action_str = actionIDToBoardCoordinateString(sgfStringToActionID(value, board_size), board_size);
+                        }
+                        actions_.emplace_back().first = SGFAction(key, action_str);
+                        // 🌟 ここまで変更
+
                         accept_move = false;
                     } else if (actions_.size()) {
                         actions_.back().second[key] = std::move(value);

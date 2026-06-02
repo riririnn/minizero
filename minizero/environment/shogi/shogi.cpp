@@ -286,6 +286,14 @@ std::vector<float> ShogiEnvLoader::getActionFeatures(const int pos, utils::Rotat
 }
 
 bool ShogiEnvLoader::loadFromString(const std::string& content) {
+    if (content.empty()) return false;
+
+    // 🌟 追加: Self-Playで作られたSGF形式 ( '(' から始まる ) の場合はベースクラスに任せる
+    if (content[0] == '(') {
+        return BaseBoardEnvLoader<ShogiAction, ShogiEnv>::loadFromString(content);
+    }
+
+
     this->action_pairs_.clear();
     this->tags_.clear();
 

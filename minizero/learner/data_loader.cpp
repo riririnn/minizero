@@ -134,6 +134,10 @@ bool DataLoaderThread::addEnvironmentLoader()
 
 bool DataLoaderThread::sampleData()
 {
+    if (getSharedData()->replay_buffer_.env_loaders_.empty() || getSharedData()->replay_buffer_.num_data_ == 0) {
+        return false;
+    }
+
     int batch_index = getSharedData()->getNextBatchIndex();
     if (batch_index >= config::learner_batch_size) { return false; }
 
