@@ -118,6 +118,7 @@ bool DataLoaderThread::addEnvironmentLoader()
 {
     std::string env_string = getSharedData()->getNextEnvString();
     if (env_string.empty()) { return false; }
+    
 
     EnvironmentLoader env_loader;
     try {
@@ -141,6 +142,12 @@ bool DataLoaderThread::sampleData()
     int batch_index = getSharedData()->getNextBatchIndex();
     if (batch_index >= config::learner_batch_size) { return false; }
 
+    // 🌟 メモリが空っぽなら自爆する前に安全に強制終了する
+    if (getSharedData()->replay_buffer_.env_loaders_.empty()) {
+        std::cerr << "[FATAL] 学習用データ(ReplayBuffer)が空です！SGFの読み込みに失敗しています。" << std::endl;
+        exit(1);
+    }
+
     if (config::nn_type_name == "alphazero") {
         setAlphaZeroTrainingData(batch_index);
     } else if (config::nn_type_name == "muzero") {
@@ -162,9 +169,13 @@ void DataLoaderThread::setAlphaZeroTrainingData(int batch_index)
     const EnvironmentLoader& env_loader = getSharedData()->replay_buffer_.env_loaders_[env_id];
     Rotation rotation = static_cast<Rotation>(Random::randInt() % static_cast<int>(Rotation::kRotateSize));
     float loss_scale = getSharedData()->replay_buffer_.getLossScale(p);
+    std::cerr << "[DEBUG] getFeatures を呼び出します (pos: " << pos << ")" << std::endl;
     std::vector<float> features = env_loader.getFeatures(pos, rotation);
+    std::cerr << "[DEBUG] getPolicy を呼び出します" << std::endl;
     std::vector<float> policy = env_loader.getPolicy(pos, rotation);
+    std::cerr << "[DEBUG] getValue を呼び出します" << std::endl;
     std::vector<float> value = env_loader.getValue(pos);
+    std::cerr << "[DEBUG] サンプリング成功" << std::endl;
 
     // write data to data_ptr
     getSharedData()->getDataPtr()->loss_scale_[batch_index] = loss_scale;
@@ -243,6 +254,8 @@ void DataLoader::loadDataFromFile(const std::string& file_name)
         std::cerr << "[Warning] Data file not found or cannot be opened: " << file_name << std::endl;
         return;
     }
+    // ファイルが開けたら、どのファイルを読み込むのかを表示する
+    std::cerr << "[DEBUG] 今から読み込むファイル: " << file_name << std::endl;
 
     for (std::string content; std::getline(fin, content);) { getSharedData()->env_strings_.push_back(content); }
 

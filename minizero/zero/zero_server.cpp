@@ -264,12 +264,38 @@ void ZeroServer::optimization()
     job_command += " " + std::to_string(std::max(1, iteration_ - config::zero_replay_buffer + 1));
     job_command += " " + std::to_string(iteration_);
 
+//    std::cout << "wawawa "<< std::endl;
+
     shared_data_.is_optimization_phase_ = true;
+    //    std::cout << "wawawa beta"<< std::endl;
     while (shared_data_.isOptimizationPahse()) {
+        //    std::cout << "wawawa alpha"<< std::endl;
         boost::lock_guard<boost::mutex> lock(worker_mutex_);
+        //    std::cout << "wawawa 1"<< std::endl;
+        
         for (auto worker : connections_) {
+            //std::cout << "worker: " << worker->getName() << std::endl;
+            // 💡 安全装置：もし worker が空っぽ（Null）だったら警告を出す
+            // if (worker == nullptr) {
+            //     std::cout << "[ERROR] 存在しない（Nullの）ワーカーがリストに混ざっています！" << std::endl;
+            //     continue; // クラッシュを防ぐためスキップ
+            // }
+            // ワーカーが持っている主要な情報をすべて出力してみる
+            // std::cout << "========== Worker Info ==========" << std::endl;
+            // std::cout << "Name : " << worker->getName() << std::endl;
+            // std::cout << "Type : " << worker->getType() << std::endl;
+            // std::cout << "Idle?: " << (worker->isIdle() ? "Yes (暇)" : "No (仕事中)") << std::endl;
+            // std::cout << "=================================" << std::endl;
+
+    // // ワーカーの名前を出力
+    // std::cout << "worker: " << worker->getName() << std::endl;
+    // std::cout << "type: " << worker->getType() << std::endl;
+            
             if (!worker->isIdle() || worker->getType() != "op") { continue; }
+            //    std::cout << "wawawa 3"<< std::endl;
             worker->setIdle(false);
+            //    std::cout << "wawawa 4"<< std::endl;
+            shared_data_.logger_.addWorkerLog("[Job] " + worker->getName() + " x " + job_command);
             worker->write(job_command);
         }
     }
