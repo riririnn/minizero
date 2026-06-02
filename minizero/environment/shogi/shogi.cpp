@@ -126,7 +126,6 @@ bool ShogiEnv::isTerminal() const {
     //    ここでは isTerminal が呼ぶべきか検討が必要
     // TODO: if no legal actions, the game is over (checkmate or stalemate)
     return false;
-    //     return winner_ != GameResult::UNDECIDED;
 }
 
 float ShogiEnv::getEvalScore(bool is_resign) const {

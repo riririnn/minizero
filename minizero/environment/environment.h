@@ -181,6 +181,8 @@ inline void setUpEnv()
     config::env_board_size = 3;
 #elif SANTORINI
     config::env_board_size = 5;
+#elif SHOGI
+    config::env_board_size = 9;
 #elif SURAKARTA
     config::env_board_size = 6;
 #elif TETRISBLOCKPUZZLE
