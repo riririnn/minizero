@@ -3,13 +3,11 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
-#include <iostream>
 
 namespace minizero::utils {
 
 bool SGFLoader::loadFromFile(const std::string& file_name)
 {
-    std::cerr << "[DEBUG] SGFLoader が読み込んでいるファイル: " << file_name << std::endl;
 
     std::ifstream fin(file_name.c_str());
     if (!fin) { return false; }

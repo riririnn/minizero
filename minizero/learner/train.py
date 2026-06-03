@@ -48,9 +48,7 @@ class MinizeroDadaLoader:
                 self.data_list.pop(0)
 
     def sample_data(self, device='cpu'):
-        print("[DEBUG] 1. C++のサンプリング(sample_data)を呼び出します", file=sys.stderr, flush=True)
         self.data_loader.sample_data(self.features, self.action_features, self.policy, self.value, self.reward, self.loss_scale, self.sampled_index)
-        print("[DEBUG] 2. C++終了。PyTorchテンソルへの変換を開始します", file=sys.stderr, flush=True)
         features = torch.FloatTensor(self.features).view(py.get_batch_size(), py.get_nn_num_input_channels(), py.get_nn_input_channel_height(), py.get_nn_input_channel_width()).to(device)
         action_features = None if self.action_features is None else torch.FloatTensor(self.action_features).view(py.get_batch_size(),
                                                                                                                  -1,
@@ -163,16 +161,12 @@ def calculate_accuracy(output, label, batch_size):
 
 
 def train(model, training_dir, data_loader, start_iter, end_iter):
-    print("[Python] コマンドを受け取りました", file=sys.stderr)
     if start_iter == -1:
         model.save_model(training_dir)
         return
 
-    print("Optimization_Start",file=sys.stderr, flush=True)
     # load data
-    print("[Python] これからDataLoaderを呼び出します", file=sys.stderr)
     data_loader.load_data(training_dir, start_iter, end_iter)
-    print("[Python] DataLoaderの呼び出しが無事終わりました", file=sys.stderr)
     training_info = {}
     for i in range(1, py.get_training_step() + 1):
         model.optimizer.zero_grad()
