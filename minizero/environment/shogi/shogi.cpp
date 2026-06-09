@@ -68,6 +68,33 @@ bool ShogiEnv::act(const ShogiAction& action) {
         winner_ = (turn_ == Player::kPlayer1 ? GameResult::BLACK_WON : GameResult::WHITE_WON);
     }
    
+    // If the number of moves reaches 300, the player with the greater number of pieces in hand is declared the winner.
+    if (actions_.size() >= 300 && winner_ == GameResult::UNDECIDED) {
+        int black_hand_count = 0;
+        int white_hand_count = 0;
+        // Get the captured pieces for both players
+        const Hand& black_hand = board_.getBlackHand();
+        const Hand& white_hand = board_.getWhiteHand();
+
+        Piece hand_pieces[] = {
+            Piece::Pawn, Piece::Lance, Piece::Knight, Piece::Silver,
+            Piece::Gold, Piece::Bishop, Piece::Rook
+        };
+        // Count the total number of pieces in hand for both players
+        for (Piece p : hand_pieces) {
+            black_hand_count += black_hand.get(p);
+            white_hand_count += white_hand.get(p);
+        }
+
+        if (black_hand_count > white_hand_count) {
+            winner_ = GameResult::BLACK_WON;
+        } else if (white_hand_count > black_hand_count) {
+            winner_ = GameResult::WHITE_WON;
+        } else {
+            winner_ = GameResult::DRAW;
+        }
+    }
+
     return true;
 }
 
