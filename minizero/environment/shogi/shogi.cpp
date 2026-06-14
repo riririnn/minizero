@@ -40,7 +40,7 @@ bool ShogiEnv::act(const ShogiAction& action) {
     Move move = action.toSunfishMove(board_);
 
     if (move.isEmpty() && action.getActionID() >= 0) {
-        std::cerr << "[ShogiEnv::act] Error: toSunfishMove failed for AZ ID " 
+        std::cerr << "[ShogiEnv::act] Error: toSunfishMove failed for AZ ID "
                   << action.getActionID() << std::endl;
         return false;
     }
@@ -52,10 +52,10 @@ bool ShogiEnv::act(const ShogiAction& action) {
 
     uint64_t hash = board_.getNoTurnHash();
     board_hash_history_[hash]++;
-    
+
     // 千日手カウント (Python: min(..., 3))
     int rep_count = std::min(board_hash_history_[hash], 3);
-    
+
     // 新しい盤面と千日手カウントを履歴に追加
     board_history_.push_back(board_);
     repetition_history_.push_back(rep_count);
@@ -64,15 +64,74 @@ bool ShogiEnv::act(const ShogiAction& action) {
     turn_ = (turn_ == Player::kPlayer1 ? Player::kPlayer2 : Player::kPlayer1);
     setLegalAction();
 
-    if(board_.isCheck(move) && legal_action_.count() == 0) {
-        winner_ = (turn_ == Player::kPlayer1 ? GameResult::BLACK_WON : GameResult::WHITE_WON);
+    // 詰み・ステイルメイト判定
+    if (legal_action_.count() == 0) {
+        if (board_.isChecking()) {
+            // 現在の手番（turn_）の玉が詰まされたので、相手の勝ち
+            winner_ = (turn_ == Player::kPlayer1 ? GameResult::WHITE_WON : GameResult::BLACK_WON);
+        } else {
+            // 王手はかかっていないが合法手がない（ステイルメイト）
+            winner_ = GameResult::DRAW;
+        }
     }
-   
-    // If the number of moves reaches 300, the player with the greater number of pieces in hand is declared the winner.
-    if (actions_.size() >= 300 && winner_ == GameResult::UNDECIDED) {
-        int black_hand_count = 0;
-        int white_hand_count = 0;
-        // Get the captured pieces for both players
+
+    // 千日手・連続王手の千日手判定
+    if (winner_ == GameResult::UNDECIDED && board_hash_history_[hash] >= 4) {
+        bool is_perpetual_check = true;
+        int match_count = 0;
+
+        for (int i = static_cast<int>(board_history_.size() - 1; i >= 0; --i) {
+            if (board_history_[i].getNoTurnHash() == hash) {
+                match_count++;
+                if (match_count == 4) {
+                    break;
+                }
+        } else {
+                int diff = static_cast<int>(board_history_.size() - 1 - i;
+                if (diff % 2 == 0) { // 王手していた側（先ほど手を指した側）の指し手による局面
+                    if (!board_history_[i].isChecking()) {
+                        is_perpetual_check = false; // 王手ではない手が含まれていた場合は通常の千日手
+                    }
+                }
+            }
+        }
+
+        if (is_perpetual_check) {
+            // 連続王手の千日手: 王手をしていた側（先ほど手を指した側）の反則負け
+            // 現在の turn_ は王手されていた側なので、現在の turn_ の勝ち
+            winner_ = (turn_ == Player::kPlayer1 ? GameResult::BLACK_WON : GameResult::WHITE_WON);
+        } else {
+            // 通常の千日手
+            winner_ = GameResult::DRAW;
+        }
+    }
+
+
+    // シンプルに500手を超えた時点で引き分け(DRAW)にする場合は、以下のコードを有効化してください
+    // if (actions_.size() >= 500 && winner_ == GameResult::UNDECIDED) {
+    //     winner_ = GameResult::DRAW;
+    // }
+
+    // If the number of moves reaches 500, determine the winner by the standard Shogi 27-point system
+    // (Rook/Bishop = 5 points, others = 1 point, King = 0).
+    // Both pieces on the board and in hand are counted.
+    if (actions_.size() >= 500 && winner_ == GameResult::UNDECIDED) {
+        int black_score = 0;
+        int white_score = 0;
+
+        // Count points for pieces on the board
+        for (int rank = 1; rank <= 9; ++rank) {
+            for (int file = 1; file <= 9; ++file) {
+                Piece p = board_.getBoardPiece(Square(file, rank));
+                if (!p.isEmpty() && p.kindOnly() != Piece::King) {
+                    int pt = (p.kindOnly() == Piece::Bishop || p.kindOnly() == Piece::Rook) ? 5 : 1;
+                    if (p.isBlack()) black_score += pt;
+                    else white_score += pt;
+                }
+            }
+        }
+
+        // Count points for pieces in hand
         const Hand& black_hand = board_.getBlackHand();
         const Hand& white_hand = board_.getWhiteHand();
 
@@ -80,15 +139,15 @@ bool ShogiEnv::act(const ShogiAction& action) {
             Piece::Pawn, Piece::Lance, Piece::Knight, Piece::Silver,
             Piece::Gold, Piece::Bishop, Piece::Rook
         };
-        // Count the total number of pieces in hand for both players
         for (Piece p : hand_pieces) {
-            black_hand_count += black_hand.get(p);
-            white_hand_count += white_hand.get(p);
+            int pt = (p.kindOnly() == Piece::Bishop || p.kindOnly() == Piece::Rook) ? 5 : 1;
+            black_score += black_hand.get(p) * pt;
+            white_score += white_hand.get(p) * pt;
         }
 
-        if (black_hand_count > white_hand_count) {
+        if (black_score > white_score) {
             winner_ = GameResult::BLACK_WON;
-        } else if (white_hand_count > black_hand_count) {
+        } else if (white_score > black_score) {
             winner_ = GameResult::WHITE_WON;
         } else {
             winner_ = GameResult::DRAW;
@@ -120,13 +179,13 @@ void ShogiEnv::setLegalAction() {
     // 合法手生成
     Moves moves;
     MoveGenerator::generate(board_, moves);
-    
+
     // 非合法手除去 & ビットセットへの登録
     for (const auto& move : moves) {
         if (board_.isValidMove(move)) { // 王手放置などの反則チェック
             int sunfish_id = Move::serialize16(move);
             int action_id = ShogiAction::convertAZ(sunfish_id, board_);
-            if (action_id != -1) { 
+            if (action_id != -1) {
                 legal_action_.set(action_id);
             }
         }
@@ -138,22 +197,8 @@ bool ShogiEnv::isLegalAction(const ShogiAction& action) const {
 }
 
 bool ShogiEnv::isTerminal() const {
-    // 1. すでに勝敗が決まっているなら当然終了
-    if (winner_ != GameResult::UNDECIDED) {
-        return true;
-    }
-
-    // 2. 合法手が0なら、ルール上「詰み」なので終了
-    if (legal_action_.none()) {
-        return true;
-    }
-
-    // 3. 千日手の判定（本来は step() や makeMove() のタイミングで 
-    //    history をチェックし、千日手なら winner_ を更新しておくのがのがよいとおもう
-    //    ここでは isTerminal が呼ぶべきか検討が必要
-    // TODO: if no legal actions, the game is over (checkmate or stalemate)
-    return false;
-    //     return winner_ != GameResult::UNDECIDED;
+    // すでに勝敗が決まっている（詰み、千日手、手数上限など）なら終了
+    return winner_ != GameResult::UNDECIDED;
 }
 
 float ShogiEnv::getEvalScore(bool is_resign) const {
@@ -162,9 +207,9 @@ float ShogiEnv::getEvalScore(bool is_resign) const {
 
 // 駒の種類と手番からチャネルのインデックスを返す
 int getPieceChannelIndex(const Piece& piece, Player turn) {
-    bool is_own_piece = (piece.isBlack() && turn == Player::kPlayer1) || 
+    bool is_own_piece = (piece.isBlack() && turn == Player::kPlayer1) ||
                         (piece.isWhite() && turn == Player::kPlayer2);
-    
+
     int piece_type = piece.isEmpty() ? -1 : (piece.index() & Piece::KindMask); // 駒の種類（0-13）
     if (piece_type == -1) {
         return -1; // 空マスの場合は無効
@@ -187,9 +232,9 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
     const int num_channels = 362;
     std::vector<float> features(num_channels * board_area, 0.0f);
 
-    const int T = 8; 
+    const int T = 8;
     const int channels_per_step = 45;
-    
+
     bool is_white_turn = (turn_ == Player::kPlayer2);
     bool us_black = !is_white_turn;
 
@@ -206,7 +251,7 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
         for (int rank = 1; rank <= 9; ++rank) {
             for (int file = 1; file <= 9; ++file) { // Sunfish file: 1(9筋)...9(1筋)
                 // ★修正1: Python(1筋=0)に合わせるため、1筋(file 9)を0にする
-                int f = file - 1; 
+                int f = file - 1;
                 int r = rank - 1;
 
                 if (is_white_turn) {
@@ -224,7 +269,7 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
                 int final_kind;
                 if (raw_kind < 12) {
                     final_kind = raw_kind; // P, L, N, S, G, B, R, K, +P, +L, +N, +S
-                } else {
+        } else {
                     final_kind = raw_kind - 1; // +B (13->12), +R (14->13)
                 }
 
@@ -239,7 +284,7 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
         // --- 2. 千日手 (3 channels) ---
         if (rep_count >= 1 && rep_count <= 3) {
             int channel = channel_offset + 28 + (rep_count - 1);
-            std::fill(features.begin() + channel * board_area, 
+            std::fill(features.begin() + channel * board_area,
                       features.begin() + (channel + 1) * board_area, 1.0f);
         }
 
@@ -260,27 +305,27 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
             int us_count = us_hand.get(us_piece);
             if (us_count > 0) {
                 int channel = channel_offset + 31 + i;
-                std::fill(features.begin() + channel * board_area, 
+                std::fill(features.begin() + channel * board_area,
                           features.begin() + (channel + 1) * board_area, static_cast<float>(us_count));
             }
             int enemy_count = enemy_hand.get(enemy_piece);
             if (enemy_count > 0) {
                 int channel = channel_offset + 38 + i;
-                std::fill(features.begin() + channel * board_area, 
+                std::fill(features.begin() + channel * board_area,
                           features.begin() + (channel + 1) * board_area, static_cast<float>(enemy_count));
             }
         }
     }
 
     // --- 4. グローバル (Turn, Move Count) ---
-    int turn_channel = T * channels_per_step; 
+    int turn_channel = T * channels_per_step;
     float turn_val = (turn_ == Player::kPlayer1) ? 1.0f : 0.0f; // Python: BLACKなら1.0
-    std::fill(features.begin() + turn_channel * board_area, 
+    std::fill(features.begin() + turn_channel * board_area,
               features.begin() + (turn_channel + 1) * board_area, turn_val);
 
-    int move_channel = turn_channel + 1; 
+    int move_channel = turn_channel + 1;
     float move_count_val = static_cast<float>(actions_.size()) / 512.0f;
-    std::fill(features.begin() + move_channel * board_area, 
+    std::fill(features.begin() + move_channel * board_area,
               features.begin() + (move_channel + 1) * board_area, move_count_val);
 
     return features;
@@ -327,10 +372,10 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
     ShogiEnv temp_env;
     std::stringstream ss(content);
     std::string segment;
-    std::vector<std::string> p_lines; 
-    bool position_loaded = false; 
+    std::vector<std::string> p_lines;
+    bool position_loaded = false;
 
-    while (std::getline(ss, segment, ',')) { 
+    while (std::getline(ss, segment, ',')) {
         // 1. セグメントの空白除去（必須）
         segment = trim(segment);
         if (segment.empty()) continue;
@@ -339,15 +384,15 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
             // P行の蓄積
             if (segment[0] == 'P' && !position_loaded) {
                 p_lines.push_back(segment);
-            } 
+            }
             // 手番/指し手開始
             else if (segment[0] == '+' || segment[0] == '-') {
-                
+
                 if (!position_loaded) {
                     // ★最重要修正: reset()ではなくclearBoard()を使う
                     // これで盤面は「全マス空」になり、ゴミが残る心配がなくなります
-                    temp_env.clearBoard(); 
-                    
+                    temp_env.clearBoard();
+
                     if (!p_lines.empty()) {
                         for (const std::string& line : p_lines) {
                             if (line.length() < 2) continue;
@@ -374,7 +419,7 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                                             if (!p.isEmpty()) temp_env.board_.setBoardPiece(Square(file, rank), p.black());
                                             idx += 3;
                                         } else { idx++; }
-                                    } 
+                                    }
                                     // 後手駒
                                     else if (body[idx] == '-') {
                                         if (idx + 2 < body.length()) {
@@ -383,11 +428,11 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                                             if (!p.isEmpty()) temp_env.board_.setBoardPiece(Square(file, rank), p.white());
                                             idx += 3;
                                         } else { idx++; }
-                                    } 
+                                    }
                                     // 空マス (*)
                                     else if (body[idx] == '*') {
                                         // 盤面は既に空なので、明示的に消す必要なし（スキップだけでOK）
-                                        idx++; 
+                                        idx++;
                                     }
                                     else {
                                         idx++;
@@ -413,7 +458,7 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                                 }
                             }
                         }
-                        
+
                         temp_env.board_.refreshHash();
                         temp_env.setLegalAction();
                     }
@@ -429,18 +474,18 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                 if (csa_turn == Player::kPlayer1) {
                     temp_env.setBlack();
                     temp_env.board_.setBlack();
-                } else {
+        } else {
                     temp_env.setWhite();
                     temp_env.board_.setWhite();
                 }
                 temp_env.setLegalAction();
 
-                if (segment.length() == 1) continue; 
+                if (segment.length() == 1) continue;
 
                 // --- 指し手処理 ---
                 const Board& current_board = temp_env.getBoard();
-                std::string move_str = segment.substr(1); 
-                
+                std::string move_str = segment.substr(1);
+
                 Move move = Move::parseCsa(current_board, move_str.c_str());
                 if (move.isEmpty()) {
                     std::string from_str = move_str.substr(0, 2);
@@ -452,20 +497,20 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                         std::cerr << " | Piece at " << f << r << ": " << p.toString();
                     }
                     std::cerr << " | Turn(Brd): " << (current_board.isBlack() ? "B" : "W") << std::endl;
-                    return !this->action_pairs_.empty(); 
+                    return !this->action_pairs_.empty();
                 }
 
                 int sunfish_id = Move::serialize16(move);
                 int az_action_id = ShogiAction::convertAZ(sunfish_id, current_board);
 
                 if (az_action_id == -1) {
-                    std::cerr << "[loadFromString] Error: Invalid AZ Action. Move=" << segment 
+                    std::cerr << "[loadFromString] Error: Invalid AZ Action. Move=" << segment
                               << " | SunfishID:" << sunfish_id << std::endl;
-                    return !this->action_pairs_.empty(); 
+                    return !this->action_pairs_.empty();
                 }
 
                 ShogiAction action(az_action_id, temp_env.getTurn());
-                this->addActionPair(action, {}); 
+                this->addActionPair(action, {});
 
                 if (!temp_env.act(action)) {
                     std::cerr << "[loadFromString] Error: act() failed for move: " << segment << std::endl;
@@ -481,10 +526,10 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
             std::cerr << "[loadFromString] Exception: " << e.what() << " at segment: " << segment << std::endl;
             return false;
         }
-    } 
+    }
 
     if (!position_loaded && p_lines.empty()) { temp_env.reset(); }
-    
+
     return !this->action_pairs_.empty();
 }
 
