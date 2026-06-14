@@ -80,14 +80,14 @@ bool ShogiEnv::act(const ShogiAction& action) {
         bool is_perpetual_check = true;
         int match_count = 0;
 
-        for (int i = static_cast<int>(board_history_.size() - 1; i >= 0; --i) {
+        for (int i = static_cast<int>(board_history_.size()) - 1; i >= 0; --i) {
             if (board_history_[i].getNoTurnHash() == hash) {
                 match_count++;
                 if (match_count == 4) {
                     break;
                 }
-        } else {
-                int diff = static_cast<int>(board_history_.size() - 1 - i;
+            } else {
+                int diff = static_cast<int>(board_history_.size()) - 1 - i;
                 if (diff % 2 == 0) { // 王手していた側（先ほど手を指した側）の指し手による局面
                     if (!board_history_[i].isChecking()) {
                         is_perpetual_check = false; // 王手ではない手が含まれていた場合は通常の千日手
@@ -125,8 +125,11 @@ bool ShogiEnv::act(const ShogiAction& action) {
                 Piece p = board_.getBoardPiece(Square(file, rank));
                 if (!p.isEmpty() && p.kindOnly() != Piece::King) {
                     int pt = (p.kindOnly() == Piece::Bishop || p.kindOnly() == Piece::Rook) ? 5 : 1;
-                    if (p.isBlack()) black_score += pt;
-                    else white_score += pt;
+                    if (p.isBlack()) {
+                        black_score += pt;
+                    } else {
+                        white_score += pt;
+                    }
                 }
             }
         }
@@ -384,10 +387,7 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
             // P行の蓄積
             if (segment[0] == 'P' && !position_loaded) {
                 p_lines.push_back(segment);
-            }
-            // 手番/指し手開始
-            else if (segment[0] == '+' || segment[0] == '-') {
-
+            } else if (segment[0] == '+' || segment[0] == '-') { // 手番/指し手開始
                 if (!position_loaded) {
                     // ★最重要修正: reset()ではなくclearBoard()を使う
                     // これで盤面は「全マス空」になり、ゴミが残る心配がなくなります
@@ -416,31 +416,32 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                                         if (idx + 2 < body.length()) {
                                             std::string kind_str = body.substr(idx + 1, 2);
                                             Piece p = Piece::parseCsa(kind_str.c_str());
-                                            if (!p.isEmpty()) temp_env.board_.setBoardPiece(Square(file, rank), p.black());
+                                            if (!p.isEmpty()) {
+                                                temp_env.board_.setBoardPiece(Square(file, rank), p.black());
+                                            }
                                             idx += 3;
-                                        } else { idx++; }
-                                    }
-                                    // 後手駒
-                                    else if (body[idx] == '-') {
+                                        } else {
+                                            idx++;
+                                        }
+                                    } else if (body[idx] == '-') { // 後手駒
                                         if (idx + 2 < body.length()) {
                                             std::string kind_str = body.substr(idx + 1, 2);
                                             Piece p = Piece::parseCsa(kind_str.c_str());
-                                            if (!p.isEmpty()) temp_env.board_.setBoardPiece(Square(file, rank), p.white());
+                                            if (!p.isEmpty()) {
+                                                temp_env.board_.setBoardPiece(Square(file, rank), p.white());
+                                            }
                                             idx += 3;
-                                        } else { idx++; }
-                                    }
-                                    // 空マス (*)
-                                    else if (body[idx] == '*') {
+                                        } else {
+                                            idx++;
+                                        }
+                                    } else if (body[idx] == '*') { // 空マス (*)
                                         // 盤面は既に空なので、明示的に消す必要なし（スキップだけでOK）
                                         idx++;
-                                    }
-                                    else {
+                                    } else {
                                         idx++;
                                     }
                                 }
-                            }
-                            // 持ち駒 (P+...)
-                            else if (line[1] == '+' || line[1] == '-') {
+                            } else if (line[1] == '+' || line[1] == '-') { // 持ち駒 (P+...)
                                 bool is_black_hand = (line[1] == '+');
                                 std::string body = line.substr(2);
                                 for (size_t i = 0; i + 3 < body.length(); ) {
@@ -449,20 +450,24 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                                          if (kind_str != "AL") {
                                              Piece p = Piece::parseCsa(kind_str.c_str());
                                              if (!p.isEmpty()) {
-                                                 if (is_black_hand) temp_env.board_.incBlackHand(p.kindOnly());
-                                                 else temp_env.board_.incWhiteHand(p.kindOnly());
+                                                 if (is_black_hand) {
+                                                     temp_env.board_.incBlackHand(p.kindOnly());
+                                                 } else {
+                                                     temp_env.board_.incWhiteHand(p.kindOnly());
+                                                 }
                                              }
                                          }
                                          i += 4;
-                                    } else { i++; }
+                                    } else {
+                                         i++;
+                                    }
                                 }
                             }
                         }
 
                         temp_env.board_.refreshHash();
                         temp_env.setLegalAction();
-                    }
-                    else {
+                    } else {
                         // P行がない場合は平手初期配置にする
                         temp_env.reset();
                     }
@@ -474,7 +479,7 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                 if (csa_turn == Player::kPlayer1) {
                     temp_env.setBlack();
                     temp_env.board_.setBlack();
-        } else {
+                } else {
                     temp_env.setWhite();
                     temp_env.board_.setWhite();
                 }
@@ -517,11 +522,13 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
                     //std::cerr << temp_env.toString() << std::endl;
                     return !this->action_pairs_.empty();
                 }
+            } else if (segment[0] == '%') {
+                break;
+            } else if (segment.rfind("'black_rate:", 0) == 0) {
+                this->addTag("BR", segment.substr(segment.rfind(':') + 1));
+            } else if (segment.rfind("'white_rate:", 0) == 0) {
+                this->addTag("WR", segment.substr(segment.rfind(':') + 1));
             }
-            else if (segment[0] == '%') { break; }
-            else if (segment.rfind("'black_rate:", 0) == 0) { this->addTag("BR", segment.substr(segment.rfind(':') + 1)); }
-            else if (segment.rfind("'white_rate:", 0) == 0) { this->addTag("WR", segment.substr(segment.rfind(':') + 1)); }
-
         } catch (const std::exception& e) {
             std::cerr << "[loadFromString] Exception: " << e.what() << " at segment: " << segment << std::endl;
             return false;
@@ -532,5 +539,4 @@ bool ShogiEnvLoader::loadFromString(const std::string& content) {
 
     return !this->action_pairs_.empty();
 }
-
-} // namespace minizero::env::shogi
+}  // namespace minizero::env::shogi
