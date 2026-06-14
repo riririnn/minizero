@@ -67,5 +67,7 @@ RUN cd /opt/ && \
     cd .. && \
     rm -rf gogui-1.4.9 gogui-1.4.9.zip
 
+RUN python3 -m pip install gradio matplotlib
+
 RUN mkdir /workspace
 WORKDIR /workspace
