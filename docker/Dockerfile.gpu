@@ -69,5 +69,9 @@ RUN cd /opt/ && \
 
 RUN python3 -m pip install gradio matplotlib
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends fonts-ipafont-mincho && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN mkdir /workspace
 WORKDIR /workspace
