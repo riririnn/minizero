@@ -83,6 +83,8 @@ bool env_havannah_use_swap_rule = true;
 bool env_hex_use_swap_rule = true;
 bool env_killallgo_use_seki = false;
 int env_rubiks_scramble_rotate = 5;
+int env_shogi_max_moves = 500;
+bool env_shogi_adjudication_no_draw = false;
 int env_surakarta_no_capture_plies = 50;
 int env_tetris_block_puzzle_num_holding_block = 3;
 int env_tetris_block_puzzle_num_preview_holding_block = 0;
@@ -184,6 +186,9 @@ void setConfiguration(ConfigureLoader& cl)
     cl.addParameter("env_killallgo_use_seki", env_killallgo_use_seki, "true for enabling seki", "Environment");
 #elif RUBIKS
     cl.addParameter("env_rubiks_scramble_rotate", env_rubiks_scramble_rotate, "the number random rotations from the initial state of a rubik's cube", "Enviroment");
+#elif SHOGI
+    cl.addParameter("env_shogi_max_moves", env_shogi_max_moves, "max moves before adjudication by the 27-point system; 0 disables the cap (games run until mate/repetition)", "Environment");
+    cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "true for breaking 27-point ties in favor of White (eliminates adjudication draws, like Go komi 7.5)", "Environment");
 #elif SURAKARTA
     cl.addParameter("env_surakarta_no_capture_plies", env_surakarta_no_capture_plies, "game is over if playing this plies without capture", "Environment");
 #elif TETRISBLOCKPUZZLE

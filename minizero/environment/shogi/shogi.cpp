@@ -112,10 +112,13 @@ bool ShogiEnv::act(const ShogiAction& action) {
     //     winner_ = GameResult::DRAW;
     // }
 
-    // If the number of moves reaches 500, determine the winner by the standard Shogi 27-point system
-    // (Rook/Bishop = 5 points, others = 1 point, King = 0).
+    // If the number of moves reaches env_shogi_max_moves, determine the winner by the
+    // standard Shogi 27-point system (Rook/Bishop = 5 points, others = 1 point, King = 0).
     // Both pieces on the board and in hand are counted.
-    if (actions_.size() >= 500 && winner_ == GameResult::UNDECIDED) {
+    // env_shogi_max_moves == 0 disables the cap entirely (games run until mate/repetition).
+    if (config::env_shogi_max_moves > 0 &&
+        static_cast<int>(actions_.size()) >= config::env_shogi_max_moves &&
+        winner_ == GameResult::UNDECIDED) {
         int black_score = 0;
         int white_score = 0;
 
@@ -153,7 +156,14 @@ bool ShogiEnv::act(const ShogiAction& action) {
         } else if (white_score > black_score) {
             winner_ = GameResult::WHITE_WON;
         } else {
-            winner_ = GameResult::DRAW;
+            // Tie in material score. Normally a draw, but when
+            // env_shogi_adjudication_no_draw is set we break the tie in favor of
+            // White (the side to move after Black's opening advantage), so that
+            // adjudicated games always yield a decisive value target — the same
+            // trick Go uses with a half-integer komi to eliminate draws.
+            winner_ = config::env_shogi_adjudication_no_draw
+                          ? GameResult::WHITE_WON
+                          : GameResult::DRAW;
         }
     }
 
