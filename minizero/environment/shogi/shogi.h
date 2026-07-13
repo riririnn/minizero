@@ -2,12 +2,13 @@
 
 #include "../base/base_env.h"
 #include <map>
+#include <utility>
 #include <string>
 #include <vector>
-#include "board.h"      
-#include "move.h" 
+#include "board.h"
+#include "move.h"
 #include "moves.h"
-#include "MoveGenerator.h" 
+#include "MoveGenerator.h"
 #include "Piece.h"
 #include "Square.h"
 #include "Hand.h"
@@ -45,8 +46,8 @@ public:
     inline std::string toConsoleString() const override {
         return "";
     }
-    Move toSunfishMove(const Board& board) const { 
-        if(action_id_ < 0)
+    Move toSunfishMove(const Board& board) const {
+        if (action_id_ < 0)
             return Move::empty();
         uint32_t sunfish_id = convertSunfish(action_id_, board);
         return Move::deserialize16(sunfish_id, board);
@@ -73,40 +74,40 @@ public:
         int distance = 0;
 
         if (dx == 0 && dy < 0) { // 上
-            distance = -dy; 
-            return 2 + (distance - 1); 
+            distance = -dy;
+            return 2 + (distance - 1);
         }
         if (dx == 0 && dy > 0) { // 下
             distance = dy;
-            return 10 + (distance - 1); 
+            return 10 + (distance - 1);
         }
         if (dy == 0 && dx < 0) { // 左
             distance = -dx;
-            return 18 + (distance - 1); 
+            return 18 + (distance - 1);
         }
         if (dy == 0 && dx > 0) { // 右
             distance = dx;
-            return 26 + (distance - 1); 
+            return 26 + (distance - 1);
         }
 
         if (dx < 0 && dy < 0 && dx == dy) { // 左上
             distance = -dx;
-            return 34 + (distance - 1); 
+            return 34 + (distance - 1);
         }
         if (dx > 0 && dy < 0 && dx == -dy) { // 右上
             distance = dx;
-            return 42 + (distance - 1); 
+            return 42 + (distance - 1);
         }
         if (dx < 0 && dy > 0 && dx == -dy) { // 左下
             distance = -dx;
-            return 50 + (distance - 1); 
+            return 50 + (distance - 1);
         }
         if (dx > 0 && dy > 0 && dx == dy) { // 右下
             distance = dx;
-            return 58 + (distance - 1); 
+            return 58 + (distance - 1);
         }
 
-        return -1; 
+        return -1;
     }
 
     /**
@@ -119,8 +120,8 @@ public:
         int to_rank = to_sq / 9;
         int to_file = to_sq % 9;
 
-        int dx = to_file - from_file; 
-        int dy = to_rank - from_rank; 
+        int dx = to_file - from_file;
+        int dy = to_rank - from_rank;
 
         return map_dx_dy_to_direction_id(dx, dy);
     }
@@ -129,9 +130,9 @@ public:
         Move move = Move::deserialize16(sunfish_id, board);
         bool is_white_move = board.isWhite();
 
-        int f_idx = 8 - (move.from().index() / 9); 
+        int f_idx = 8 - (move.from().index() / 9);
         int r_idx = move.from().index() % 9;
-        
+
         int tf_idx = 8 - (move.to().index() / 9);
         int rt_idx = move.to().index() % 9;
 
@@ -166,22 +167,52 @@ public:
      * (逆変換用) Rank-Major座標系で移動先を計算
      */
     static int get_to_sq_from_direction(int from_sq, int direction_id) {
-        int from_rank = from_sq / 9; 
-        int from_file = from_sq % 9; 
+        int from_rank = from_sq / 9;
+        int from_file = from_sq % 9;
 
         int dx = 0; int dy = 0; int distance = 0;
 
-        if (direction_id == 0) { dx = -1; dy = -2; }      // 桂馬 (左)
-        else if (direction_id == 1) { dx = 1; dy = -2; }  // 桂馬 (右)
-        else if (direction_id >= 2 && direction_id <= 9) { distance = (direction_id - 2) + 1; dx = 0; dy = -distance; }
-        else if (direction_id >= 10 && direction_id <= 17) { distance = (direction_id - 10) + 1; dx = 0; dy = distance; }
-        else if (direction_id >= 18 && direction_id <= 25) { distance = (direction_id - 18) + 1; dx = -distance; dy = 0; }
-        else if (direction_id >= 26 && direction_id <= 33) { distance = (direction_id - 26) + 1; dx = distance; dy = 0; }
-        else if (direction_id >= 34 && direction_id <= 41) { distance = (direction_id - 34) + 1; dx = -distance; dy = -distance; }
-        else if (direction_id >= 42 && direction_id <= 49) { distance = (direction_id - 42) + 1; dx = distance; dy = -distance; }
-        else if (direction_id >= 50 && direction_id <= 57) { distance = (direction_id - 50) + 1; dx = -distance; dy = distance; }
-        else if (direction_id >= 58 && direction_id <= 65) { distance = (direction_id - 58) + 1; dx = distance; dy = distance; }
-        else { return -1; }
+        if (direction_id == 0) { // 桂馬 (左)
+            dx = -1;
+            dy = -2;
+        } else if (direction_id == 1) { // 桂馬 (右)
+            dx = 1;
+            dy = -2;
+        } else if (direction_id >= 2 && direction_id <= 9) {
+            distance = (direction_id - 2) + 1;
+            dx = 0;
+            dy = -distance;
+        } else if (direction_id >= 10 && direction_id <= 17) {
+            distance = (direction_id - 10) + 1;
+            dx = 0;
+            dy = distance;
+        } else if (direction_id >= 18 && direction_id <= 25) {
+            distance = (direction_id - 18) + 1;
+            dx = -distance;
+            dy = 0;
+        } else if (direction_id >= 26 && direction_id <= 33) {
+            distance = (direction_id - 26) + 1;
+            dx = distance;
+            dy = 0;
+        } else if (direction_id >= 34 && direction_id <= 41) {
+            distance = (direction_id - 34) + 1;
+            dx = -distance;
+            dy = -distance;
+        } else if (direction_id >= 42 && direction_id <= 49) {
+            distance = (direction_id - 42) + 1;
+            dx = distance;
+            dy = -distance;
+        } else if (direction_id >= 50 && direction_id <= 57) {
+            distance = (direction_id - 50) + 1;
+            dx = -distance;
+            dy = distance;
+        } else if (direction_id >= 58 && direction_id <= 65) {
+            distance = (direction_id - 58) + 1;
+            dx = distance;
+            dy = distance;
+        } else {
+            return -1;
+        }
 
         int to_file = from_file + dx;
         int to_rank = from_rank + dy;
@@ -213,17 +244,17 @@ public:
 
             // Python piece_map の逆変換
             static const int rev_piece_map[] = {0, 1, 2, 3, 5, 6, 4}; // Py -> Sunfish
-            Piece piece(static_cast<uint8_t>(rev_piece_map[py_piece_type])); 
-            
+            Piece piece(static_cast<uint8_t>(rev_piece_map[py_piece_type]));
+
             return fromSunfishMove(piece, Square(to_sunfish_sq(az_to)));
-        
+
         } else {
             int move_id_raw = az_action_id - (7 * kShogiBoardArea);
             int rotated_from = move_id_raw / 132;
             int move_type_id = move_id_raw % 132;
             int direction_id = move_type_id / 2;
             bool promote = (move_type_id % 2) == 1;
-        
+
             int rotated_to = get_to_sq_from_direction(rotated_from, direction_id);
             if (rotated_to == -1) return 0;
 
@@ -237,7 +268,7 @@ public:
             Piece piece_on_board = pos.getBoardPiece(Square(sunfish_from));
             return fromSunfishMove(piece_on_board.unpromote(), Square(sunfish_from), Square(sunfish_to), promote);
         }
-    };
+    }
 };
 
 // --- Env ---
@@ -288,9 +319,17 @@ private:
 class ShogiEnvLoader : public BaseBoardEnvLoader<ShogiAction, ShogiEnv> {
 public:
     std::vector<float> getActionFeatures(const int pos, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
-    inline std::vector<float> getValue(const int pos) const { return {getReturn()}; } //
+    // Value target from Black's perspective. Drawn games (return 0) can be
+    // remapped to env_shogi_draw_value (contempt): a small negative value makes
+    // Black learn to avoid repetition draws, which alone breaks sennichite
+    // loops since a repetition needs both players to cooperate.
+    inline std::vector<float> getValue(const int pos) const
+    {
+        const float ret = getReturn();
+        return {ret == 0.0f ? config::env_shogi_draw_value : ret};
+    }
     inline std::string name() const override { return kShogiName; }
-    bool loadFromString(const std::string& content) override; 
+    bool loadFromString(const std::string& content) override;
     inline int getPolicySize() const override { return kShogiPolicySize ; }
     inline int getRotatePosition(int position, utils::Rotation rotation) const override { return position; }
     inline int getRotateAction(int action_id, utils::Rotation rotation) const override { return action_id; }

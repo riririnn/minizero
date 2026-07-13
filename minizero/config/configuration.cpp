@@ -85,6 +85,7 @@ bool env_killallgo_use_seki = false;
 int env_rubiks_scramble_rotate = 5;
 int env_shogi_max_moves = 500;
 bool env_shogi_adjudication_no_draw = false;
+float env_shogi_draw_value = 0.0f;
 int env_surakarta_no_capture_plies = 50;
 int env_tetris_block_puzzle_num_holding_block = 3;
 int env_tetris_block_puzzle_num_preview_holding_block = 0;
@@ -189,6 +190,7 @@ void setConfiguration(ConfigureLoader& cl)
 #elif SHOGI
     cl.addParameter("env_shogi_max_moves", env_shogi_max_moves, "max moves before adjudication by the 27-point system; 0 disables the cap (games run until mate/repetition)", "Environment");
     cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "true for breaking 27-point ties in favor of White (eliminates adjudication draws, like Go komi 7.5)", "Environment");
+    cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "value target for drawn games from Black's perspective (contempt); e.g. -0.2 makes Black avoid repetition draws (matches the shogi convention that sente should break sennichite); 0 keeps draws neutral", "Environment");
 #elif SURAKARTA
     cl.addParameter("env_surakarta_no_capture_plies", env_surakarta_no_capture_plies, "game is over if playing this plies without capture", "Environment");
 #elif TETRISBLOCKPUZZLE
