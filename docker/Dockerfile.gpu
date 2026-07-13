@@ -49,9 +49,8 @@ PY
 RUN python3 -m pip install gym[atari] && \
     python3 -m pip cache purge && \
     cd /opt/ && \
-    git clone https://github.com/mgbellemare/Arcade-Learning-Environment.git && \
+    git clone --branch v0.8.1 --depth 1 https://github.com/mgbellemare/Arcade-Learning-Environment.git && \
     cd Arcade-Learning-Environment && \
-    git checkout d59d00688b58c5c14dff5fc79db5c22e86987f5d && \
     mkdir build && cd build && \
     cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DBUILD_PYTHON_LIB=OFF && \
     cmake --build . --target install -j && \
