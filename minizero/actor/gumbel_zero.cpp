@@ -57,9 +57,9 @@ std::string GumbelZero::getMCTSPolicy(const std::shared_ptr<MCTS>& mcts) const
     return oss.str();
 }
 
-MCTSNode* GumbelZero::decideActionNode(const std::shared_ptr<MCTS>& mcts)
+MCTSNode* GumbelZero::decideActionNode(const std::shared_ptr<MCTS>& mcts, bool greedy)
 {
-    if (config::actor_select_action_by_count) {
+    if (config::actor_select_action_by_count || greedy) {
         assert(candidates_.size() > 0);
         sortCandidatesByScore(mcts);
         return candidates_[0];

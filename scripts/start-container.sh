@@ -84,7 +84,7 @@ elif [ ${container_tool} = "docker" ]; then
 		fi
 	done
 	# add Git safe directory
-	git_safe_cmd='git config --global --add safe.directory /workspace && exec bash'
+	git_safe_cmd='git config --global --add safe.directory "*" && exec bash'
 	# add argument
 	container_arguments="${container_arguments} -e container=${container_tool}"
 	echo "$container_tool run ${container_arguments} ${device_args} --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --network=host --ipc=host --rm -it ${container_volume} ${image_name} bash -c \"${git_safe_cmd}\""

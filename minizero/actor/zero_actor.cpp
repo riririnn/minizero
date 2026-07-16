@@ -177,10 +177,15 @@ void ZeroActor::handleSearchDone()
 
 MCTSNode* ZeroActor::decideActionNode()
 {
+    // AlphaZero-style opening exploration: sample by softmax count only for the
+    // first actor_select_action_softmax_temperature_move_cutoff moves of each
+    // game, then play greedily (by max count) for the remainder.
+    const bool greedy = config::actor_select_action_softmax_temperature_move_cutoff > 0 &&
+                        static_cast<int>(env_.getActionHistory().size()) >= config::actor_select_action_softmax_temperature_move_cutoff;
     if (config::actor_use_gumbel) {
-        return gumbel_zero_.decideActionNode(getMCTS());
+        return gumbel_zero_.decideActionNode(getMCTS(), greedy);
     } else {
-        if (config::actor_select_action_by_count) {
+        if (config::actor_select_action_by_count || greedy) {
             return getMCTS()->selectChildByMaxCount(getMCTS()->getRootNode());
         } else if (config::actor_select_action_by_softmax_count) {
             return getMCTS()->selectChildBySoftmaxCount(getMCTS()->getRootNode(), config::actor_select_action_softmax_temperature);

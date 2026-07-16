@@ -10,7 +10,7 @@ namespace minizero::actor {
 class GumbelZero {
 public:
     std::string getMCTSPolicy(const std::shared_ptr<MCTS>& mcts) const;
-    MCTSNode* decideActionNode(const std::shared_ptr<MCTS>& mcts);
+    MCTSNode* decideActionNode(const std::shared_ptr<MCTS>& mcts, bool greedy = false);
     std::vector<MCTSNode*> selection(const std::shared_ptr<MCTS>& mcts);
     void sequentialHalving(const std::shared_ptr<MCTS>& mcts);
     void sortCandidatesByScore(const std::shared_ptr<MCTS>& mcts);

@@ -17,6 +17,7 @@ RUN rm /etc/apt/sources.list.d/cuda.list || true && \
     cmake \
     ffmpeg \
     clang-format \
+    tmux \
     python3-pip \
     python3-dev \
     python3-opencv \
@@ -48,9 +49,8 @@ RUN python3 -m pip install gym[atari] && \
     python3 -m pip cache purge && \
     ale-import-roms /opt/atari57 && \
     cd /opt/ && \
-    git clone https://github.com/mgbellemare/Arcade-Learning-Environment.git && \
+    git clone --branch v0.8.1 --depth 1 https://github.com/mgbellemare/Arcade-Learning-Environment.git && \
     cd Arcade-Learning-Environment && \
-    git checkout d59d00688b58c5c14dff5fc79db5c22e86987f5d && \
     mkdir build && cd build && \
     cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DBUILD_PYTHON_LIB=OFF && \
     cmake --build . --target install -j && \
