@@ -84,9 +84,10 @@ bool env_havannah_use_swap_rule = true;
 bool env_hex_use_swap_rule = true;
 bool env_killallgo_use_seki = false;
 int env_rubiks_scramble_rotate = 5;
-int env_shogi_max_moves = 500;
+int env_shogi_max_moves = 512;
 bool env_shogi_adjudication_no_draw = false;
 float env_shogi_draw_value = 0.0f;
+bool env_shogi_enable_declaration_win = true;
 int env_surakarta_no_capture_plies = 50;
 int env_tetris_block_puzzle_num_holding_block = 3;
 int env_tetris_block_puzzle_num_preview_holding_block = 0;
@@ -110,7 +111,7 @@ void setConfiguration(ConfigureLoader& cl)
     cl.addParameter("actor_select_action_by_softmax_count", actor_select_action_by_softmax_count, "true for selecting the action by the propotion of MCTS count; should not be true together with actor_select_action_by_count", "Actor");
     cl.addParameter("actor_select_action_softmax_temperature", actor_select_action_softmax_temperature, "the softmax temperature when using actor_select_action_by_softmax_count", "Actor");
     cl.addParameter("actor_select_action_softmax_temperature_decay", actor_select_action_softmax_temperature_decay, "true for decaying the temperature based on training iteration; set 1, 0.5, and 0.25 for 0%-50%, 50%-75%, and 75%-100% of total iterations, respectively", "Actor"); // ref: MZ
-    cl.addParameter("actor_select_action_softmax_temperature_move_cutoff", actor_select_action_softmax_temperature_move_cutoff, "select actions greedily (by max count) after this many moves in each game, using the softmax temperature only before; 0 disables the cutoff", "Actor"); // ref: AZ, Sec. Methods
+    cl.addParameter("actor_select_action_softmax_temperature_move_cutoff", actor_select_action_softmax_temperature_move_cutoff, "select actions greedily (by max count) after this many moves in each game; 0 disables the cutoff", "Actor"); // ref: AZ, Sec. Methods
     cl.addParameter("actor_use_random_rotation_features", actor_use_random_rotation_features, "true for randomly rotating input features; only supports in alphazero", "Actor");
     cl.addParameter("actor_use_dirichlet_noise", actor_use_dirichlet_noise, "true for adding dirchlet noise to the policy", "Actor");                                          // ref: AZ, Sec. Methods
     cl.addParameter("actor_dirichlet_noise_alpha", actor_dirichlet_noise_alpha, "hyperparameter for dirchlet noise, usually (1 / sqrt(number of actions))", "Actor");          // ref: AZ, Sec. Methods
@@ -190,9 +191,10 @@ void setConfiguration(ConfigureLoader& cl)
 #elif RUBIKS
     cl.addParameter("env_rubiks_scramble_rotate", env_rubiks_scramble_rotate, "the number random rotations from the initial state of a rubik's cube", "Enviroment");
 #elif SHOGI
-    cl.addParameter("env_shogi_max_moves", env_shogi_max_moves, "max moves before adjudication by the 27-point system; 0 disables the cap (games run until mate/repetition)", "Environment");
-    cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "deprecated, no effect: capped games are now scored as draws (AlphaZero-style) instead of 27-point adjudication", "Environment");
-    cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "deprecated, no effect: draws are now a plain 0 value target (AlphaZero-style); the Black-perspective contempt remap was removed because it rewarded White for drawing", "Environment");
+    cl.addParameter("env_shogi_max_moves", env_shogi_max_moves, "games reaching this many moves are scored as draws; 0 disables the cap", "Environment");
+    cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "deprecated, no effect", "Environment");
+    cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "deprecated, no effect", "Environment");
+    cl.addParameter("env_shogi_enable_declaration_win", env_shogi_enable_declaration_win, "true for the CSA entering-king declaration win (27-point rule)", "Environment");
 #elif SURAKARTA
     cl.addParameter("env_surakarta_no_capture_plies", env_surakarta_no_capture_plies, "game is over if playing this plies without capture", "Environment");
 #elif TETRISBLOCKPUZZLE

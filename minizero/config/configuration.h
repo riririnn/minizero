@@ -91,6 +91,7 @@ extern int env_rubiks_scramble_rotate;
 extern int env_shogi_max_moves;
 extern bool env_shogi_adjudication_no_draw;
 extern float env_shogi_draw_value;
+extern bool env_shogi_enable_declaration_win;
 extern int env_surakarta_no_capture_plies;
 extern int env_tetris_block_puzzle_num_holding_block;
 extern int env_tetris_block_puzzle_num_preview_holding_block;

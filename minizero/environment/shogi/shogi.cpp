@@ -10,6 +10,7 @@ namespace minizero::env::shogi {
 void ShogiEnv::reset() {
     board_.init(Board::Handicap::Even);
     winner_ = GameResult::UNDECIDED;
+    end_reason_.clear();
     actions_.clear();
     observations_.clear();
     turn_ = Player::kPlayer1;
@@ -17,7 +18,7 @@ void ShogiEnv::reset() {
     board_history_.clear();
     repetition_history_.clear();
     board_hash_history_.clear();
-    uint64_t hash = board_.getNoTurnHash();
+    uint64_t hash = board_.getHash();
     board_hash_history_[hash]++;
     board_history_.push_back(board_);
     repetition_history_.push_back(1);
@@ -26,6 +27,7 @@ void ShogiEnv::reset() {
 void ShogiEnv::clearBoard() {
     board_.init();
     winner_ = GameResult::UNDECIDED;
+    end_reason_.clear();
     actions_.clear();
     observations_.clear();
     turn_ = Player::kPlayer1;
@@ -50,7 +52,8 @@ bool ShogiEnv::act(const ShogiAction& action) {
         return false;
     }
 
-    uint64_t hash = board_.getNoTurnHash();
+    // sennichite requires the same position AND the same side to move
+    uint64_t hash = board_.getHash();
     board_hash_history_[hash]++;
 
     // 千日手カウント (Python: min(..., 3))
@@ -69,55 +72,96 @@ bool ShogiEnv::act(const ShogiAction& action) {
         if (board_.isChecking()) {
             // 現在の手番（turn_）の玉が詰まされたので、相手の勝ち
             winner_ = (turn_ == Player::kPlayer1 ? GameResult::WHITE_WON : GameResult::BLACK_WON);
+            end_reason_ = "mate";
         } else {
             // 王手はかかっていないが合法手がない（ステイルメイト）
             winner_ = GameResult::DRAW;
+            end_reason_ = "stalemate";
         }
     }
 
     // 千日手・連続王手の千日手判定
     if (winner_ == GameResult::UNDECIDED && board_hash_history_[hash] >= 4) {
-        bool is_perpetual_check = true;
-        int match_count = 0;
-
-        for (int i = static_cast<int>(board_history_.size()) - 1; i >= 0; --i) {
-            if (board_history_[i].getNoTurnHash() == hash) {
-                match_count++;
-                if (match_count == 4) {
+        // find the span back to the 4th-latest occurrence of this position
+        const int last = static_cast<int>(board_history_.size()) - 1;
+        int match_count = 0, span_start = 0;
+        for (int i = last; i >= 0; --i) {
+            if (board_history_[i].getHash() == hash) {
+                if (++match_count == 4) {
+                    span_start = i;
                     break;
-                }
-            } else {
-                int diff = static_cast<int>(board_history_.size()) - 1 - i;
-                if (diff % 2 == 0) { // 王手していた側（先ほど手を指した側）の指し手による局面
-                    if (!board_history_[i].isChecking()) {
-                        is_perpetual_check = false; // 王手ではない手が含まれていた場合は通常の千日手
-                    }
                 }
             }
         }
 
-        if (is_perpetual_check) {
-            // 連続王手の千日手: 王手をしていた側（先ほど手を指した側）の反則負け
-            // 現在の turn_ は王手されていた側なので、現在の turn_ の勝ち
+        // 連続王手: 反復区間内で片側の全着手が王手なら、その側の反則負け。
+        // 反復はどちらの側の着手でも成立し得るため両側を検査する。
+        // isChecking() はその局面の手番側（=直前に指していない側）への王手
+        bool mover_all_checks = true, opponent_all_checks = true;
+        for (int i = span_start + 1; i <= last; ++i) {
+            if (board_history_[i].isChecking()) { continue; }
+            if ((last - i) % 2 == 0) {
+                mover_all_checks = false; // a non-check move by the last mover
+            } else {
+                opponent_all_checks = false;
+            }
+        }
+
+        if (mover_all_checks) {
+            // the last mover was perpetually checking: they lose (current turn_ wins)
             winner_ = (turn_ == Player::kPlayer1 ? GameResult::BLACK_WON : GameResult::WHITE_WON);
+            end_reason_ = "perpetual_check";
+        } else if (opponent_all_checks) {
+            // the side to move now was perpetually checking: the last mover wins
+            winner_ = (turn_ == Player::kPlayer1 ? GameResult::WHITE_WON : GameResult::BLACK_WON);
+            end_reason_ = "perpetual_check";
         } else {
             // 通常の千日手
             winner_ = GameResult::DRAW;
+            end_reason_ = "sennichite";
         }
     }
 
 
-    // If the number of moves reaches env_shogi_max_moves, the game is scored as
-    // a draw (z = 0), following the AlphaZero paper: over-length games carry no
-    // reward, so the only way to win is to force a decisive result before the
-    // cap. (An earlier version adjudicated capped games with the 27-point
-    // material count, but that made "hold material safely until the cap" score
-    // identically to checkmating, teaching the model to play out the clock.)
-    // env_shogi_max_moves == 0 disables the cap entirely (games run until mate/repetition).
+    // 入玉宣言法 (CSA 27点ルール): 指した側の玉が敵陣、敵陣内に玉以外の自駒10枚
+    // 以上、点数(敵陣内駒+持駒; 飛角=5他=1)が先手28/後手27以上で勝ち。
+    // 「王手されていない」条件は合法手の定義により自動的に満たされる
+    if (config::env_shogi_enable_declaration_win && winner_ == GameResult::UNDECIDED) {
+        const bool mover_black = (turn_ == Player::kPlayer2); // turn_ already flipped
+        const Square king_sq = mover_black ? board_.getBKingSquare() : board_.getWKingSquare();
+        const int king_rank = king_sq.getRank();
+        if (mover_black ? (king_rank <= 3) : (king_rank >= 7)) {
+            int pieces_in_camp = 0, points = 0;
+            const int rank_begin = mover_black ? 1 : 7;
+            for (int rank = rank_begin; rank < rank_begin + 3; ++rank) {
+                for (int file = 1; file <= 9; ++file) {
+                    Piece p = board_.getBoardPiece(Square(file, rank));
+                    if (p.isEmpty() || p.isBlack() != mover_black) { continue; }
+                    Piece kind = p.hand(); // strip color and promotion
+                    if (kind.index() == Piece::King) { continue; }
+                    ++pieces_in_camp;
+                    points += (kind.index() == Piece::Bishop || kind.index() == Piece::Rook) ? 5 : 1;
+                }
+            }
+            const Hand& hand = mover_black ? board_.getBlackHand() : board_.getWhiteHand();
+            static const uint8_t hand_kinds[] = {Piece::Pawn, Piece::Lance, Piece::Knight,
+                                                 Piece::Silver, Piece::Gold, Piece::Bishop, Piece::Rook};
+            for (uint8_t k : hand_kinds) {
+                points += hand.get(Piece(k)) * ((k == Piece::Bishop || k == Piece::Rook) ? 5 : 1);
+            }
+            if (pieces_in_camp >= 10 && points >= (mover_black ? 28 : 27)) {
+                winner_ = mover_black ? GameResult::BLACK_WON : GameResult::WHITE_WON;
+                end_reason_ = "declaration";
+            }
+        }
+    }
+
+    // 上限手数到達は引き分け(z=0)。0は上限なし
     if (config::env_shogi_max_moves > 0 &&
         static_cast<int>(actions_.size()) >= config::env_shogi_max_moves &&
         winner_ == GameResult::UNDECIDED) {
         winner_ = GameResult::DRAW;
+        end_reason_ = "cap";
     }
 
     return true;

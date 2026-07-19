@@ -298,6 +298,8 @@ public:
 
     inline std::string name() const override { return kShogiName; }
     inline int getNumPlayer() const override { return kShogiNumPlayer; }
+    // mate / stalemate / perpetual_check / sennichite / declaration / cap; empty while running
+    inline const std::string& getEndReason() const { return end_reason_; }
     inline int getRotatePosition(int position, utils::Rotation rotation) const override { return position; }
     inline int getRotateAction(int action_id, utils::Rotation rotation) const override { return action_id; }
 
@@ -309,6 +311,7 @@ public:
 
 private:
     GameResult winner_ = GameResult::UNDECIDED;
+    std::string end_reason_;
     std::bitset</*policy size*/ kShogiPolicySize> legal_action_;
     std::vector<Board> board_history_;
     std::vector<int> repetition_history_;
@@ -319,13 +322,16 @@ private:
 class ShogiEnvLoader : public BaseBoardEnvLoader<ShogiAction, ShogiEnv> {
 public:
     std::vector<float> getActionFeatures(const int pos, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
-    // Value target from Black's perspective; draws are a plain 0 as in the
-    // AlphaZero paper. (An earlier contempt remap penalized draws from Black's
-    // perspective only, which — after MCTS's per-player value flip — actively
-    // rewarded White for reaching draws.)
+    // value target from Black's perspective; draws are 0
     inline std::vector<float> getValue(const int pos) const { return {getReturn()}; }
     inline std::string name() const override { return kShogiName; }
     bool loadFromString(const std::string& content) override;
+    // record the end reason as an RR tag
+    void loadFromEnvironment(const ShogiEnv& env, const std::vector<std::vector<std::pair<std::string, std::string>>>& action_info_history = {}) override
+    {
+        BaseBoardEnvLoader<ShogiAction, ShogiEnv>::loadFromEnvironment(env, action_info_history);
+        addTag("RR", env.isTerminal() ? env.getEndReason() : "resign");
+    }
     inline int getPolicySize() const override { return kShogiPolicySize ; }
     inline int getRotatePosition(int position, utils::Rotation rotation) const override { return position; }
     inline int getRotateAction(int action_id, utils::Rotation rotation) const override { return action_id; }
