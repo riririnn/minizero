@@ -191,8 +191,8 @@ void setConfiguration(ConfigureLoader& cl)
     cl.addParameter("env_rubiks_scramble_rotate", env_rubiks_scramble_rotate, "the number random rotations from the initial state of a rubik's cube", "Enviroment");
 #elif SHOGI
     cl.addParameter("env_shogi_max_moves", env_shogi_max_moves, "max moves before adjudication by the 27-point system; 0 disables the cap (games run until mate/repetition)", "Environment");
-    cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "true for breaking 27-point ties in favor of White (eliminates adjudication draws, like Go komi 7.5)", "Environment");
-    cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "value target for drawn games from Black's perspective (contempt); e.g. -0.2 makes Black avoid repetition draws (matches the shogi convention that sente should break sennichite); 0 keeps draws neutral", "Environment");
+    cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "deprecated, no effect: capped games are now scored as draws (AlphaZero-style) instead of 27-point adjudication", "Environment");
+    cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "deprecated, no effect: draws are now a plain 0 value target (AlphaZero-style); the Black-perspective contempt remap was removed because it rewarded White for drawing", "Environment");
 #elif SURAKARTA
     cl.addParameter("env_surakarta_no_capture_plies", env_surakarta_no_capture_plies, "game is over if playing this plies without capture", "Environment");
 #elif TETRISBLOCKPUZZLE

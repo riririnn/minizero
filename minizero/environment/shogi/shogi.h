@@ -319,15 +319,11 @@ private:
 class ShogiEnvLoader : public BaseBoardEnvLoader<ShogiAction, ShogiEnv> {
 public:
     std::vector<float> getActionFeatures(const int pos, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
-    // Value target from Black's perspective. Drawn games (return 0) can be
-    // remapped to env_shogi_draw_value (contempt): a small negative value makes
-    // Black learn to avoid repetition draws, which alone breaks sennichite
-    // loops since a repetition needs both players to cooperate.
-    inline std::vector<float> getValue(const int pos) const
-    {
-        const float ret = getReturn();
-        return {ret == 0.0f ? config::env_shogi_draw_value : ret};
-    }
+    // Value target from Black's perspective; draws are a plain 0 as in the
+    // AlphaZero paper. (An earlier contempt remap penalized draws from Black's
+    // perspective only, which — after MCTS's per-player value flip — actively
+    // rewarded White for reaching draws.)
+    inline std::vector<float> getValue(const int pos) const { return {getReturn()}; }
     inline std::string name() const override { return kShogiName; }
     bool loadFromString(const std::string& content) override;
     inline int getPolicySize() const override { return kShogiPolicySize ; }

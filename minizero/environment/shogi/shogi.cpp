@@ -107,64 +107,17 @@ bool ShogiEnv::act(const ShogiAction& action) {
     }
 
 
-    // シンプルに500手を超えた時点で引き分け(DRAW)にする場合は、以下のコードを有効化してください
-    // if (actions_.size() >= 500 && winner_ == GameResult::UNDECIDED) {
-    //     winner_ = GameResult::DRAW;
-    // }
-
-    // If the number of moves reaches env_shogi_max_moves, determine the winner by the
-    // standard Shogi 27-point system (Rook/Bishop = 5 points, others = 1 point, King = 0).
-    // Both pieces on the board and in hand are counted.
+    // If the number of moves reaches env_shogi_max_moves, the game is scored as
+    // a draw (z = 0), following the AlphaZero paper: over-length games carry no
+    // reward, so the only way to win is to force a decisive result before the
+    // cap. (An earlier version adjudicated capped games with the 27-point
+    // material count, but that made "hold material safely until the cap" score
+    // identically to checkmating, teaching the model to play out the clock.)
     // env_shogi_max_moves == 0 disables the cap entirely (games run until mate/repetition).
     if (config::env_shogi_max_moves > 0 &&
         static_cast<int>(actions_.size()) >= config::env_shogi_max_moves &&
         winner_ == GameResult::UNDECIDED) {
-        int black_score = 0;
-        int white_score = 0;
-
-        // Count points for pieces on the board
-        for (int rank = 1; rank <= 9; ++rank) {
-            for (int file = 1; file <= 9; ++file) {
-                Piece p = board_.getBoardPiece(Square(file, rank));
-                if (!p.isEmpty() && p.kindOnly() != Piece::King) {
-                    int pt = (p.kindOnly() == Piece::Bishop || p.kindOnly() == Piece::Rook) ? 5 : 1;
-                    if (p.isBlack()) {
-                        black_score += pt;
-                    } else {
-                        white_score += pt;
-                    }
-                }
-            }
-        }
-
-        // Count points for pieces in hand
-        const Hand& black_hand = board_.getBlackHand();
-        const Hand& white_hand = board_.getWhiteHand();
-
-        Piece hand_pieces[] = {
-            Piece::Pawn, Piece::Lance, Piece::Knight, Piece::Silver,
-            Piece::Gold, Piece::Bishop, Piece::Rook
-        };
-        for (Piece p : hand_pieces) {
-            int pt = (p.kindOnly() == Piece::Bishop || p.kindOnly() == Piece::Rook) ? 5 : 1;
-            black_score += black_hand.get(p) * pt;
-            white_score += white_hand.get(p) * pt;
-        }
-
-        if (black_score > white_score) {
-            winner_ = GameResult::BLACK_WON;
-        } else if (white_score > black_score) {
-            winner_ = GameResult::WHITE_WON;
-        } else {
-            // Tie in material score. Normally a draw, but when
-            // env_shogi_adjudication_no_draw is set we break the tie in favor of
-            // White (the side to move after Black's opening advantage), so that
-            // adjudicated games always yield a decisive value target — the same
-            // trick Go uses with a half-integer komi to eliminate draws.
-            winner_ = config::env_shogi_adjudication_no_draw
-                          ? GameResult::WHITE_WON
-                          : GameResult::DRAW;
-        }
+        winner_ = GameResult::DRAW;
     }
 
     return true;
