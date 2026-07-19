@@ -180,7 +180,14 @@ void ActorGroup::createActors()
 {
     assert(getSharedData()->networks_.size() > 0);
     std::shared_ptr<Network>& network = getSharedData()->networks_[0];
-    uint64_t tree_node_size = static_cast<uint64_t>(config::actor_num_simulation + 1) * network->getActionSize();
+    // pool sizing: each expansion allocates children only for the legal actions
+    // of one position, so a per-position cap far below the full action size is
+    // sufficient for games with large action spaces (shogi: 11259 actions but
+    // at most 593 known legal moves per position)
+    uint64_t max_children = config::actor_mcts_tree_max_children > 0
+                                ? static_cast<uint64_t>(config::actor_mcts_tree_max_children)
+                                : static_cast<uint64_t>(network->getActionSize());
+    uint64_t tree_node_size = static_cast<uint64_t>(config::actor_num_simulation + 1) * max_children;
     for (int i = 0; i < config::zero_num_parallel_games; ++i) {
         getSharedData()->actors_.emplace_back(createActor(tree_node_size, getSharedData()->networks_[i % getSharedData()->networks_.size()]));
     }

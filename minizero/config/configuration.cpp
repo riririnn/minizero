@@ -22,6 +22,7 @@ bool actor_select_action_by_softmax_count = true;
 float actor_select_action_softmax_temperature = 1.0f;
 bool actor_select_action_softmax_temperature_decay = false;
 int actor_select_action_softmax_temperature_move_cutoff = 0;
+int actor_mcts_tree_max_children = 0;
 bool actor_use_random_rotation_features = true;
 bool actor_use_dirichlet_noise = true;
 float actor_dirichlet_noise_alpha = 0.03f;
@@ -112,6 +113,7 @@ void setConfiguration(ConfigureLoader& cl)
     cl.addParameter("actor_select_action_softmax_temperature", actor_select_action_softmax_temperature, "the softmax temperature when using actor_select_action_by_softmax_count", "Actor");
     cl.addParameter("actor_select_action_softmax_temperature_decay", actor_select_action_softmax_temperature_decay, "true for decaying the temperature based on training iteration; set 1, 0.5, and 0.25 for 0%-50%, 50%-75%, and 75%-100% of total iterations, respectively", "Actor"); // ref: MZ
     cl.addParameter("actor_select_action_softmax_temperature_move_cutoff", actor_select_action_softmax_temperature_move_cutoff, "select actions greedily (by max count) after this many moves in each game; 0 disables the cutoff", "Actor"); // ref: AZ, Sec. Methods
+    cl.addParameter("actor_mcts_tree_max_children", actor_mcts_tree_max_children, "cap on per-expansion children used for MCTS node pool sizing; 0 uses the full action size", "Actor");
     cl.addParameter("actor_use_random_rotation_features", actor_use_random_rotation_features, "true for randomly rotating input features; only supports in alphazero", "Actor");
     cl.addParameter("actor_use_dirichlet_noise", actor_use_dirichlet_noise, "true for adding dirchlet noise to the policy", "Actor");                                          // ref: AZ, Sec. Methods
     cl.addParameter("actor_dirichlet_noise_alpha", actor_dirichlet_noise_alpha, "hyperparameter for dirchlet noise, usually (1 / sqrt(number of actions))", "Actor");          // ref: AZ, Sec. Methods

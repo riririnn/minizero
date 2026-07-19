@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -70,7 +72,14 @@ public:
 
     inline TreeNode* allocateNodes(int size)
     {
-        assert(current_node_size_ + size <= 1 + tree_node_size_);
+        // always-on check (assert is compiled out in release builds): overflowing
+        // the preallocated pool would silently corrupt memory otherwise
+        if (current_node_size_ + size > 1 + tree_node_size_) {
+            std::cerr << "[Tree::allocateNodes] node pool exhausted: requested " << size
+                      << ", used " << current_node_size_ << " / " << (1 + tree_node_size_)
+                      << " (raise actor_mcts_tree_max_children)" << std::endl;
+            std::abort();
+        }
         TreeNode* node = getNodeIndex(current_node_size_);
         current_node_size_ += size;
         return node;

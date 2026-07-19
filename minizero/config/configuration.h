@@ -24,6 +24,7 @@ extern bool actor_select_action_by_softmax_count;
 extern float actor_select_action_softmax_temperature;
 extern bool actor_select_action_softmax_temperature_decay;
 extern int actor_select_action_softmax_temperature_move_cutoff;
+extern int actor_mcts_tree_max_children;
 extern bool actor_use_random_rotation_features;
 extern bool actor_use_dirichlet_noise;
 extern float actor_dirichlet_noise_alpha;
