@@ -70,8 +70,12 @@ bool ShogiEnv::setFromSFEN(const std::string& sfen)
     {
         std::string cur;
         for (char c : board_str) {
-            if (c == '/') { ranks.push_back(cur); cur.clear(); }
-            else { cur.push_back(c); }
+            if (c == '/') {
+                ranks.push_back(cur);
+                cur.clear();
+            } else {
+                cur.push_back(c);
+            }
         }
         ranks.push_back(cur);
     }
@@ -116,9 +120,15 @@ bool ShogiEnv::setFromSFEN(const std::string& sfen)
     }
 
     // --- 手番 ---
-    if (turn_str == "b" || turn_str == "B") { board_.setBlack(); turn_ = Player::kPlayer1; }
-    else if (turn_str == "w" || turn_str == "W") { board_.setWhite(); turn_ = Player::kPlayer2; }
-    else { return false; }
+    if (turn_str == "b" || turn_str == "B") {
+        board_.setBlack();
+        turn_ = Player::kPlayer1;
+    } else if (turn_str == "w" || turn_str == "W") {
+        board_.setWhite();
+        turn_ = Player::kPlayer2;
+    } else {
+        return false;
+    }
 
     board_.refreshHash();
 
