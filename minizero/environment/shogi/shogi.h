@@ -278,6 +278,7 @@ public:
 
     void reset() override;
     void clearBoard();
+    bool setFromSFEN(const std::string& sfen); // 任意のSFEN局面から開始する
     bool act(const ShogiAction& action) override;
     bool act(const std::vector<std::string>& action_string_args) override;
     std::vector<ShogiAction> getLegalActions() const override;

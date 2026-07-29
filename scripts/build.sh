@@ -72,3 +72,8 @@ if [ "${game_type}" == "all" ]; then
 else
 	build_game ${game_type} ${build_type}
 fi
+
+# mcts-dump: 探索木の図生成に graphviz が必要
+if (( $(dpkg -l | grep graphviz | wc -c) == 0 )); then
+	apt -y update && apt -y install graphviz && pip install graphviz
+fi

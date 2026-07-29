@@ -26,6 +26,7 @@ Console::Console()
     RegisterFunction("protocol_version", this, &Console::cmdProtocalVersion);
     RegisterFunction("clear_board", this, &Console::cmdClearBoard);
     RegisterFunction("showboard", this, &Console::cmdShowBoard);
+    RegisterFunction("load_sfen", this, &Console::cmdLoadSFEN);
     RegisterFunction("play", this, &Console::cmdPlay);
     RegisterFunction("boardsize", this, &Console::cmdBoardSize);
     RegisterFunction("genmove", this, &Console::cmdGenmove);
@@ -133,6 +134,22 @@ void Console::cmdClearBoard(const std::vector<std::string>& args)
 void Console::cmdShowBoard(const std::vector<std::string>& args)
 {
     if (!checkArgument(args, 1, 1)) { return; }
+    reply(ConsoleResponse::kSuccess, "\n" + actor_->getEnvironment().toString());
+}
+
+void Console::cmdLoadSFEN(const std::vector<std::string>& args)
+{
+    // SFENは空白を含む（board turn hand [movenum]）ので args[1..] を連結して渡す
+    if (!checkArgument(args, 3, INT_MAX)) { return; }
+    std::string sfen;
+    for (unsigned int i = 1; i < args.size(); ++i) {
+        if (i > 1) { sfen += " "; }
+        sfen += args[i];
+    }
+    if (!actor_->getEnvironment().setFromSFEN(sfen)) {
+        return reply(ConsoleResponse::kFail, "Invalid SFEN: \"" + sfen + "\"");
+    }
+    actor_->resetSearch();
     reply(ConsoleResponse::kSuccess, "\n" + actor_->getEnvironment().toString());
 }
 

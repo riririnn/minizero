@@ -54,6 +54,7 @@ protected:
     void cmdProtocalVersion(const std::vector<std::string>& args);
     void cmdClearBoard(const std::vector<std::string>& args);
     void cmdShowBoard(const std::vector<std::string>& args);
+    void cmdLoadSFEN(const std::vector<std::string>& args);
     void cmdPlay(const std::vector<std::string>& args);
     void cmdBoardSize(const std::vector<std::string>& args);
     void cmdGenmove(const std::vector<std::string>& args);

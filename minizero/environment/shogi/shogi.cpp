@@ -2,6 +2,7 @@
 #include <utility>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 
 namespace minizero::env::shogi {
 
@@ -35,6 +36,106 @@ void ShogiEnv::clearBoard() {
     board_history_.clear();
     repetition_history_.clear();
     board_hash_history_.clear();
+}
+
+// SFEN (USI position) 文字列から任意局面を構築する。
+// 例: "6k2/9/5SP2/4b4/9/9/9/9/9 b -2rb4g3s4n4l17p 1"
+// 成功で true、解析失敗で false（局面は途中まで変わりうるので呼び出し側で扱う）。
+bool ShogiEnv::setFromSFEN(const std::string& sfen)
+{
+    auto kindOf = [](char c, bool& ok) -> uint8_t {
+        ok = true;
+        switch (std::toupper(static_cast<unsigned char>(c))) {
+            case 'P': return Piece::Pawn;
+            case 'L': return Piece::Lance;
+            case 'N': return Piece::Knight;
+            case 'S': return Piece::Silver;
+            case 'G': return Piece::Gold;
+            case 'B': return Piece::Bishop;
+            case 'R': return Piece::Rook;
+            case 'K': return Piece::King;
+            default: ok = false; return 0;
+        }
+    };
+
+    std::istringstream iss(sfen);
+    std::string board_str, turn_str, hand_str;
+    if (!(iss >> board_str >> turn_str)) { return false; }
+    if (!(iss >> hand_str)) { hand_str = "-"; } // 手数フィールドは無視
+
+    board_.init(); // 空盤・持ち駒0・ビットボード初期化
+
+    // --- 盤面 ---
+    std::vector<std::string> ranks;
+    {
+        std::string cur;
+        for (char c : board_str) {
+            if (c == '/') { ranks.push_back(cur); cur.clear(); }
+            else { cur.push_back(c); }
+        }
+        ranks.push_back(cur);
+    }
+    if (ranks.size() != 9) { return false; }
+    for (int r = 0; r < 9; ++r) {
+        int file = 9;
+        bool promo = false;
+        for (char c : ranks[r]) {
+            if (c == '+') { promo = true; continue; }
+            if (c >= '1' && c <= '9') { file -= (c - '0'); promo = false; continue; }
+            bool ok = false;
+            uint8_t kind = kindOf(c, ok);
+            if (!ok || file < 1 || file > 9) { return false; }
+            uint8_t val = kind;
+            if (promo) { val |= Piece::Promotion; }
+            if (std::islower(static_cast<unsigned char>(c))) { val |= Piece::White; }
+            board_.setBoardPiece(Square(file, r + 1), Piece(static_cast<uint8_t>(val)));
+            promo = false;
+            --file;
+        }
+        if (file != 0) { return false; }
+    }
+
+    // --- 持ち駒 ---
+    if (hand_str != "-") {
+        int count = 0;
+        for (char c : hand_str) {
+            if (c == '-') { continue; } // 先手なしを表す先頭'-'等を許容
+            if (c >= '0' && c <= '9') { count = count * 10 + (c - '0'); continue; }
+            bool ok = false;
+            uint8_t kind = kindOf(c, ok);
+            if (!ok) { return false; }
+            int n = (count == 0) ? 1 : count;
+            count = 0;
+            Piece p(static_cast<uint8_t>(kind));
+            if (std::isupper(static_cast<unsigned char>(c))) {
+                board_.setBlackHand(p, board_.getBlackHand(p) + n);
+            } else {
+                board_.setWhiteHand(p, board_.getWhiteHand(p) + n);
+            }
+        }
+    }
+
+    // --- 手番 ---
+    if (turn_str == "b" || turn_str == "B") { board_.setBlack(); turn_ = Player::kPlayer1; }
+    else if (turn_str == "w" || turn_str == "W") { board_.setWhite(); turn_ = Player::kPlayer2; }
+    else { return false; }
+
+    board_.refreshHash();
+
+    // --- 環境状態を初期化（reset() と同様） ---
+    winner_ = GameResult::UNDECIDED;
+    end_reason_.clear();
+    actions_.clear();
+    observations_.clear();
+    setLegalAction();
+    board_history_.clear();
+    repetition_history_.clear();
+    board_hash_history_.clear();
+    uint64_t hash = board_.getHash();
+    board_hash_history_[hash]++;
+    board_history_.push_back(board_);
+    repetition_history_.push_back(1);
+    return true;
 }
 
 bool ShogiEnv::act(const ShogiAction& action) {
