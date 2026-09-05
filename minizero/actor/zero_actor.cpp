@@ -80,12 +80,7 @@ void ZeroActor::afterNNEvaluation(const std::shared_ptr<NetworkOutput>& network_
         if (!env_transition.isTerminal()) {
             std::shared_ptr<AlphaZeroNetworkOutput> alphazero_output = std::static_pointer_cast<AlphaZeroNetworkOutput>(network_output);
             getMCTS()->expand(leaf_node, calculateAlphaZeroActionPolicy(env_transition, alphazero_output, feature_rotation_));
-            // the network predicts from the side to move, but MCTS keeps values in
-            // the first player's perspective -- the same one getEvalScore() uses for
-            // terminal nodes below, and that getNormalizedMean() flips per node.
-            float value = alphazero_output->value_;
-            if (env_transition.getTurn() == env::Player::kPlayer2) { value = -value; }
-            getMCTS()->backup(node_path, value, env_transition.getReward());
+            getMCTS()->backup(node_path, alphazero_output->value_, env_transition.getReward());
         } else {
             getMCTS()->backup(node_path, env_transition.getEvalScore(), env_transition.getReward());
         }
