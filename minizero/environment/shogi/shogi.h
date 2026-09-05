@@ -323,11 +323,8 @@ private:
 class ShogiEnvLoader : public BaseBoardEnvLoader<ShogiAction, ShogiEnv> {
 public:
     std::vector<float> getActionFeatures(const int pos, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
-    // value target from the side to move; draws are 0. getFeatures() rotates the
-    // board for White, so a Black-perspective result would give the same input
-    // two opposite labels and the network settles on predicting 0.
-    // Even ply = Black to move, since shogi starts with Black.
-    inline std::vector<float> getValue(const int pos) const { return {getReturn() * (pos % 2 == 0 ? 1.0f : -1.0f)}; }
+    // value target from Black's perspective; draws are 0
+    inline std::vector<float> getValue(const int pos) const { return {getReturn()}; }
     inline std::string name() const override { return kShogiName; }
     bool loadFromString(const std::string& content) override;
     // record the end reason as an RR tag
