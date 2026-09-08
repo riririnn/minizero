@@ -80,7 +80,11 @@ void ZeroActor::afterNNEvaluation(const std::shared_ptr<NetworkOutput>& network_
         if (!env_transition.isTerminal()) {
             std::shared_ptr<AlphaZeroNetworkOutput> alphazero_output = std::static_pointer_cast<AlphaZeroNetworkOutput>(network_output);
             getMCTS()->expand(leaf_node, calculateAlphaZeroActionPolicy(env_transition, alphazero_output, feature_rotation_));
-            getMCTS()->backup(node_path, alphazero_output->value_, env_transition.getReward());
+            // the network predicts in whatever perspective the environment's value
+            // target uses; convert to the first player's perspective, which is what
+            // MCTS keeps and what getEvalScore() returns for terminal nodes below.
+            // Identity for every environment except shogi.
+            getMCTS()->backup(node_path, env_transition.toFirstPlayerValue(alphazero_output->value_), env_transition.getReward());
         } else {
             getMCTS()->backup(node_path, env_transition.getEvalScore(), env_transition.getReward());
         }

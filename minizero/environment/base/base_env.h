@@ -101,6 +101,13 @@ public:
     virtual int getNumPlayer() const = 0;
     virtual void setTurn(Player p) { turn_ = p; }
 
+    // MCTS keeps values in the first player's perspective, and so does the value
+    // target of every environment that does not rotate its features. An environment
+    // whose getFeatures() is relative to the side to move has to label from the side
+    // to move as well -- otherwise the same input carries opposite labels -- so the
+    // network it trains predicts from the side to move, and converts back here.
+    virtual float toFirstPlayerValue(float value) const { return value; }
+
     inline Player getTurn() const { return turn_; }
     inline const std::vector<Action>& getActionHistory() const { return actions_; }
     inline const std::vector<std::string>& getObservationHistory() const { return observations_; }

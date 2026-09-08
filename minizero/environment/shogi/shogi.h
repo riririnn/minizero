@@ -289,6 +289,9 @@ public:
     float getEvalScore(bool is_resign = false) const override;
     std::vector<float> getFeatures(utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
     std::vector<float> getActionFeatures(const ShogiAction& action, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
+    // getFeatures() rotates the board for White, so the value target -- and hence
+    // the network's output -- is from the side to move. Convert back for MCTS.
+    float toFirstPlayerValue(float value) const override { return turn_ == Player::kPlayer2 ? -value : value; }
     std::string toString() const override;
     Board board_; // 現在の局面
     const Board& getBoard() const { return board_; }
@@ -323,8 +326,17 @@ private:
 class ShogiEnvLoader : public BaseBoardEnvLoader<ShogiAction, ShogiEnv> {
 public:
     std::vector<float> getActionFeatures(const int pos, utils::Rotation rotation = utils::Rotation::kRotationNone) const override;
-    // value target from Black's perspective; draws are 0
-    inline std::vector<float> getValue(const int pos) const { return {getReturn()}; }
+    // value target from the side to move; draws are 0
+    inline std::vector<float> getValue(const int pos) const
+    {
+        return {getReturn() * (getTurnAt(pos) == Player::kPlayer1 ? 1.0f : -1.0f)};
+    }
+    inline Player getTurnAt(const int pos) const
+    {
+        if (action_pairs_.empty()) { return Player::kPlayer1; }
+        if (pos < static_cast<int>(action_pairs_.size())) { return action_pairs_[pos].first.getPlayer(); }
+        return getNextPlayer(action_pairs_.back().first.getPlayer(), kShogiNumPlayer);
+    }
     inline std::string name() const override { return kShogiName; }
     bool loadFromString(const std::string& content) override;
     // record the end reason as an RR tag
