@@ -108,6 +108,10 @@ public:
     // network it trains predicts from the side to move, and converts back here.
     virtual float toFirstPlayerValue(float value) const { return value; }
 
+    // the load_sfen console command reaches every game, so give it a default that
+    // simply refuses; only environments with an SFEN notation override this
+    virtual bool setFromSFEN(const std::string& sfen) { return false; }
+
     inline Player getTurn() const { return turn_; }
     inline const std::vector<Action>& getActionHistory() const { return actions_; }
     inline const std::vector<std::string>& getObservationHistory() const { return observations_; }

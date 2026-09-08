@@ -8,6 +8,7 @@ target_include_directories(
     amazons
     atari
     shogi
+    dobutsu
     breakthrough
     clobber
     conhex
