@@ -8,30 +8,30 @@ namespace minizero::env::dobutsu {
 
 namespace {
 
-inline int toPosition(int row, int col) { return row * kDobutsuBoardWidth + col; }
-inline int rowOf(int position) { return position / kDobutsuBoardWidth; }
-inline int colOf(int position) { return position % kDobutsuBoardWidth; }
+    inline int toPosition(int row, int col) { return row * kDobutsuBoardWidth + col; }
+    inline int rowOf(int position) { return position / kDobutsuBoardWidth; }
+    inline int colOf(int position) { return position % kDobutsuBoardWidth; }
 
-// Player1 sits at the bottom (row 3) and advances towards row 0, so the rank it
-// promotes on -- and wins by reaching -- is the opponent's back rank
-inline int enemyBackRowOf(Player player) { return (player == Player::kPlayer1 ? 0 : kDobutsuBoardHeight - 1); }
+    // Player1 sits at the bottom (row 3) and advances towards row 0, so the rank it
+    // promotes on -- and wins by reaching -- is the opponent's back rank
+    inline int enemyBackRowOf(Player player) { return (player == Player::kPlayer1 ? 0 : kDobutsuBoardHeight - 1); }
 
-const char* kPieceLetter = "GECHL"; // giraffe, elephant, chick, hen, lion
+    const char* kPieceLetter = "GECHL"; // giraffe, elephant, chick, hen, lion
 
-// which of the 8 directions each piece may use, as seen by Player1
-bool canStep(PieceType type, int dr, int dc)
-{
-    const bool orthogonal = (dr == 0) != (dc == 0);
-    const bool diagonal = (dr != 0) && (dc != 0);
-    switch (type) {
-        case PieceType::kLion: return true;
-        case PieceType::kGiraffe: return orthogonal;
-        case PieceType::kElephant: return diagonal;
-        case PieceType::kChick: return dr == -1 && dc == 0;
-        case PieceType::kHen: return !(dr == 1 && dc != 0); // everything but the two backward diagonals
-        default: return false;
+    // which of the 8 directions each piece may use, as seen by Player1
+    bool canStep(PieceType type, int dr, int dc)
+    {
+        const bool orthogonal = (dr == 0) != (dc == 0);
+        const bool diagonal = (dr != 0) && (dc != 0);
+        switch (type) {
+            case PieceType::kLion: return true;
+            case PieceType::kGiraffe: return orthogonal;
+            case PieceType::kElephant: return diagonal;
+            case PieceType::kChick: return dr == -1 && dc == 0;
+            case PieceType::kHen: return !(dr == 1 && dc != 0); // everything but the two backward diagonals
+            default: return false;
+        }
     }
-}
 
 } // namespace
 
