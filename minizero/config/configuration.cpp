@@ -86,6 +86,7 @@ bool env_hex_use_swap_rule = true;
 bool env_killallgo_use_seki = false;
 int env_rubiks_scramble_rotate = 5;
 int env_shogi_max_moves = 512;
+int env_minishogi_max_moves = 256;
 bool env_shogi_adjudication_no_draw = false;
 float env_shogi_draw_value = 0.0f;
 bool env_shogi_enable_declaration_win = true;
@@ -197,6 +198,8 @@ void setConfiguration(ConfigureLoader& cl)
     cl.addParameter("env_shogi_adjudication_no_draw", env_shogi_adjudication_no_draw, "deprecated, no effect", "Environment");
     cl.addParameter("env_shogi_draw_value", env_shogi_draw_value, "deprecated, no effect", "Environment");
     cl.addParameter("env_shogi_enable_declaration_win", env_shogi_enable_declaration_win, "true for the CSA entering-king declaration win (27-point rule)", "Environment");
+#elif MINISHOGI
+    cl.addParameter("env_minishogi_max_moves", env_minishogi_max_moves, "not a rule of minishogi: games reaching this many moves are scored as draws so self-play cannot run unbounded; 0 disables the cap", "Environment");
 #elif SURAKARTA
     cl.addParameter("env_surakarta_no_capture_plies", env_surakarta_no_capture_plies, "game is over if playing this plies without capture", "Environment");
 #elif TETRISBLOCKPUZZLE

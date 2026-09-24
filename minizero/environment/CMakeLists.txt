@@ -9,6 +9,7 @@ target_include_directories(
     atari
     shogi
     dobutsu
+    minishogi
     breakthrough
     clobber
     conhex

@@ -17,6 +17,11 @@ typedef minizero::env::atari::AtariEnvLoader EnvironmentLoader;
 typedef minizero::env::dobutsu::DobutsuAction Action;
 typedef minizero::env::dobutsu::DobutsuEnv Environment;
 typedef minizero::env::dobutsu::DobutsuEnvLoader EnvironmentLoader;
+#elif MINISHOGI
+#include "minishogi.h"
+typedef minizero::env::minishogi::MinishogiAction Action;
+typedef minizero::env::minishogi::MinishogiEnv Environment;
+typedef minizero::env::minishogi::MinishogiEnvLoader EnvironmentLoader;
 #elif SHOGI
 #include "shogi.h"
 typedef minizero::env::shogi::ShogiAction Action;
@@ -148,6 +153,8 @@ inline void setUpEnv()
     config::zero_actor_intermediate_sequence_length = 200;
 #elif DOBUTSU
     config::env_board_size = 3;
+#elif MINISHOGI
+    config::env_board_size = 5;
 #elif SHOGI
     config::env_board_size = 9;
 #elif BREAKTHROUGH
@@ -190,6 +197,8 @@ inline void setUpEnv()
     config::env_board_size = 5;
 #elif DOBUTSU
     config::env_board_size = 3;
+#elif MINISHOGI
+    config::env_board_size = 5;
 #elif SHOGI
     config::env_board_size = 9;
 #elif SURAKARTA
