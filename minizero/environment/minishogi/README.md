@@ -172,6 +172,8 @@ games 60  plies compared 4995  games ended 35  failures 0
 **両方が同じテストを通ることが、回転の規約が一致している根拠**になる。
 これが 5五将棋で測った順位を 9×9 に持っていける理由。
 
+動物将棋は盤を回転させない作りなので、このテストの対象外。
+
 ## 4. 既知の制約
 
 - `getActionFeatures()` は空（MuZero 用。AlphaZero では使わない）。9×9 と同じ
