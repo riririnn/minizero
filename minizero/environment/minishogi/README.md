@@ -159,15 +159,18 @@ PASS  perpetual check by sente, sente loses
 ある局面と、その盤を180度回して先後を入れ替えた局面は、手番の面を除いて
 **同じ特徴量**になり、**合法手の集合も一致**しなければならない。
 
-```
-$ PYTHONPATH=build/shogi     python3 scripts/shogi_symmetry_test.py shogi
-shogi: 362 channels on 81 squares, turn plane 360
-games 60  plies compared 7077  games ended 6  failures 0
+2026-09-27 に確認した結果。検証用スクリプトは実行後に削除した。
 
-$ PYTHONPATH=build/minishogi python3 scripts/shogi_symmetry_test.py minishogi
-minishogi: 266 channels on 25 squares, turn plane 264
-games 60  plies compared 4995  games ended 35  failures 0
 ```
+shogi      362 channels, 81 squares   7077手を比較  失敗0
+minishogi  266 channels, 25 squares   4995手を比較  失敗0
+```
+
+手順。ある局面とその鏡像をSFENで作る。初期局面は点対称なので、鏡像は同じ盤面で
+手番だけ違うものになる。偏った局面も数種類用意する。両方に**同じ行動ID**を指す。
+行動IDは手番側から見た座標なので、同じIDが鏡像の手になる。1手ごとに、手番の面以外の
+特徴量が一致すること、合法手のID集合が一致すること、終局したら勝敗の符号が逆で
+あることを確かめる。
 
 **両方が同じテストを通ることが、回転の規約が一致している根拠**になる。
 これが 5五将棋で測った順位を 9×9 に持っていける理由。
