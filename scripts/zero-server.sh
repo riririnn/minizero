@@ -88,8 +88,15 @@ fi
 
 run_stage="R"
 if [ -d ${train_dir} ]; then
-	read -n1 -p "${train_dir} has existed. (R)estart / (C)ontinue / (Q)uit? " run_stage
-	echo ""
+	# ZERO_RUN_STAGE answers for a script; the server is started in the background,
+	# where a prompt cannot be answered by hand
+	if [[ -n ${ZERO_RUN_STAGE} ]]; then
+		run_stage=${ZERO_RUN_STAGE}
+		echo "${train_dir} has existed. ZERO_RUN_STAGE=${run_stage}"
+	else
+		read -n1 -p "${train_dir} has existed. (R)estart / (C)ontinue / (Q)uit? " run_stage
+		echo ""
+	fi
 fi
 
 zero_start_iteration=1
@@ -114,15 +121,20 @@ if [[ ${run_stage,} == "r" ]]; then
 	cuda_devices=$(echo ${gpu_list} | awk '{ split($0, chars, ""); printf(chars[1]); for(i=2; i<=length(chars); ++i) { printf(","chars[i]); } }')
 	echo "train \"\" -1 -1" | CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python ${op_executable_file} ${game_type} ${train_dir} ${train_dir}/${new_configure_file} >/dev/null 2>&1
 elif [[ ${run_stage,} == "c" ]]; then
-	zero_start_iteration=$(ls ${train_dir}/model/ | grep ".pt$" | wc -l)
+	# count the games, not the models: a finished iteration always leaves one sgf,
+	# while model files may have been pruned to save disk
+	zero_start_iteration=$(($(ls ${train_dir}/sgf/ | grep -c ".sgf$") + 1))
 	model_file=$(ls ${train_dir}/model/ | grep ".pt$" | sort -V | tail -n1)
 	new_configure_file=$(basename ${train_dir}/*.cfg)
 	echo y | ${sp_executable_file} -gen ${train_dir}/${new_configure_file} -conf_file ${train_dir}/${new_configure_file} -conf_str "${overwrite_conf_str}" 2>/dev/null
 
 	# friendly notification if continuing training
-	read -n1 -p "Continue training from iteration: ${zero_start_iteration}, model file: ${model_file}, configuration: ${train_dir}/${new_configure_file}. Sure? (y/n) " yn
-	[[ ${yn,,} == "y" ]] || exit
-	echo ""
+	echo "Continue training from iteration: ${zero_start_iteration}, model file: ${model_file}, configuration: ${train_dir}/${new_configure_file}."
+	if [[ -z ${ZERO_RUN_STAGE} ]]; then
+		read -n1 -p "Sure? (y/n) " yn
+		[[ ${yn,,} == "y" ]] || exit
+		echo ""
+	fi
 else
 	exit
 fi
