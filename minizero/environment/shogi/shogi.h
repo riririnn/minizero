@@ -34,17 +34,83 @@ public:
         player_ = charToPlayer(action_string_args[0][0]);
         assert(static_cast<int>(player_) > 0 && static_cast<int>(player_) <= kShogiNumPlayer);
 
-        // 🌟 追加: SGFから抜き出された数字を、行動IDとしてセットする
-        if (!action_string_args[1].empty() && action_string_args[1] != "PASS") {
-            action_id_ = std::stoi(action_string_args[1]);
-        } else {
-            action_id_ = -1;
-        }
+        action_id_ = parseAction(action_string_args[1], player_);
     }
 
     inline Player nextPlayer() const override { return getNextPlayer(player_, kShogiNumPlayer); }
-    inline std::string toConsoleString() const override {
-        return "";
+
+    // 打つ駒の並び順は行動IDの定義（shogi_coords.py）と同じ P L N S B R G
+    static char dropPieceChar(int id) { return "PLNSBRG"[id]; }
+    static int dropPieceId(char c)
+    {
+        const size_t i = std::string("PLNSBRG").find(c);
+        return i == std::string::npos ? -1 : static_cast<int>(i);
+    }
+    // 標準座標のマス <-> USI表記（7g は筋7・段7）
+    static std::string squareString(int sq)
+    {
+        std::string s;
+        s += static_cast<char>('1' + sq % 9);
+        s += static_cast<char>('a' + sq / 9);
+        return s;
+    }
+    static int usiSquare(char file, char rank) { return (rank - 'a') * 9 + (file - '1'); }
+
+    /**
+     * 行動IDをUSI表記にする（7g7f, 7g7f+, P*5e）。
+     * 座標は shogi_coords.py と同じ標準座標で、やねうら王と照合済みの規約。
+     */
+    inline std::string toConsoleString() const override
+    {
+        if (action_id_ < 0) { return "PASS"; }
+        const bool white = (player_ == Player::kPlayer2);
+        if (action_id_ < 7 * kShogiBoardArea) {
+            int to = action_id_ % kShogiBoardArea;
+            if (white) { to = kShogiBoardArea - 1 - to; }
+            return std::string(1, dropPieceChar(action_id_ / kShogiBoardArea)) + "*" + squareString(to);
+        }
+        const int rest = action_id_ - 7 * kShogiBoardArea;
+        int from = rest / 132;
+        int to = get_to_sq_from_direction(from, (rest % 132) / 2);
+        if (to < 0) { return "PASS"; }
+        if (white) {
+            from = kShogiBoardArea - 1 - from;
+            to = kShogiBoardArea - 1 - to;
+        }
+        return squareString(from) + squareString(to) + ((rest % 2) == 1 ? "+" : "");
+    }
+
+    /**
+     * 行動を表す文字列を行動IDにする。棋譜(SGF)は行動IDを整数で持ち、
+     * コンソールや外部の道具はUSI表記を送ってくるので、両方を受け取る。
+     */
+    static int parseAction(const std::string& move, Player player)
+    {
+        if (move.empty() || move == "PASS") { return -1; }
+        bool numeric = true;
+        for (char c : move) {
+            if (c < '0' || c > '9') { numeric = false; }
+        }
+        if (numeric) { return std::stoi(move); }
+        if (move.size() < 4) { return -1; }
+
+        const bool white = (player == Player::kPlayer2);
+        if (move[1] == '*') {
+            const int piece = dropPieceId(move[0]);
+            if (piece < 0) { return -1; }
+            int to = usiSquare(move[2], move[3]);
+            if (white) { to = kShogiBoardArea - 1 - to; }
+            return piece * kShogiBoardArea + to;
+        }
+        int from = usiSquare(move[0], move[1]);
+        int to = usiSquare(move[2], move[3]);
+        if (white) {
+            from = kShogiBoardArea - 1 - from;
+            to = kShogiBoardArea - 1 - to;
+        }
+        const int direction = map_dx_dy_to_direction_id(to % 9 - from % 9, to / 9 - from / 9);
+        if (direction < 0) { return -1; }
+        return 7 * kShogiBoardArea + from * 132 + direction * 2 + (move.size() > 4 && move[4] == '+' ? 1 : 0);
     }
     Move toSunfishMove(const Board& board) const {
         if (action_id_ < 0)
