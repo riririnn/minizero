@@ -194,9 +194,13 @@ def analysis_(dir, path, iter, all: bool = False, name: bool = False):
                         step_interval = learner_training_step
                     ax1.plot([(x + 1) * step_interval for x in list(range(len(myDict[key])))], myDict[key], label=f'{key}', linewidth=width)
                     axs[counter_fig].plot([(x + 1) * step_interval for x in list(range(len(myDict[key])))], myDict[key], label=f'{key}', linewidth=width)
-                ax2.set_xlim([ax1.get_xlim()[0] / learner_training_step, ax1.get_xlim()[1] / learner_training_step])
+                # op.log may not hold Optimization_Done yet, and dividing a
+                # numpy float by zero gives inf, which set_xlim refuses
+                if learner_training_step > 0:
+                    ax2.set_xlim([ax1.get_xlim()[0] / learner_training_step, ax1.get_xlim()[1] / learner_training_step])
                 axs_twiny = axs[counter_fig].twiny()
-                axs_twiny.set_xlim([ax1.get_xlim()[0] / learner_training_step, ax1.get_xlim()[1] / learner_training_step])
+                if learner_training_step > 0:
+                    axs_twiny.set_xlim([ax1.get_xlim()[0] / learner_training_step, ax1.get_xlim()[1] / learner_training_step])
         if bool_print:
             plt.title(f'{item} of {dir} in op.log', fontsize=30)
             axs[counter_fig].set_title(f'{item} of {dir} in op.log')
