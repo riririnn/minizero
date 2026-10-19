@@ -72,5 +72,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends fonts-ipafont-mincho && \
     rm -rf /var/lib/apt/lists/*
 
+# 7. AobaZero (CPU only) needs liblzma, zlib and a BLAS; Boost is installed above
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends liblzma-dev zlib1g-dev libopenblas-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN mkdir /workspace
 WORKDIR /workspace
