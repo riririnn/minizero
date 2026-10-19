@@ -72,9 +72,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends fonts-ipafont-mincho && \
     rm -rf /var/lib/apt/lists/*
 
-# 7. AobaZero (CPU only) needs liblzma, zlib and a BLAS; Boost is installed above
+# 7. AobaZero (CPU only) needs liblzma, zlib and a BLAS; Boost is installed above.
+#    Its Makefile links -lOpenCL even for the CPU build, so the loader is needed too
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends liblzma-dev zlib1g-dev libopenblas-dev && \
+    apt-get install -y --no-install-recommends liblzma-dev zlib1g-dev libopenblas-dev ocl-icd-opencl-dev xz-utils && \
     rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /workspace
