@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <deque>
 #include <utility>
 #include <vector>
 #include <stdexcept>
@@ -17,15 +16,8 @@ public:
     VectorMap() {}
     VectorMap(const VectorMap& info) : info_(info.info_) {}
     VectorMap(VectorMap&& info) : info_(std::move(info.info_)) {}
-    VectorMap(const std::vector<Item>& info)
-    {
-        for (const Item& item : info) { info_.emplace_back(item); }
-    }
-    VectorMap(std::vector<Item>&& info)
-    {
-        std::vector<Item> buff = std::move(info);
-        for (Item& item : buff) { info_.emplace_back(std::move(item)); }
-    }
+    VectorMap(const std::vector<Item>& info) : info_(info) {}
+    VectorMap(std::vector<Item>&& info) : info_(std::move(info)) {}
 
 public:
     operator std::vector<Item> &() { return info_; }
@@ -104,7 +96,7 @@ public:
     auto end() const { return info_.end(); }
 
 private:
-    std::deque<Item> info_;
+    std::vector<Item> info_; // a vector, not a deque: an empty deque still allocates ~600 bytes, and most action infos are empty
 };
 
 } // namespace minizero::utils
