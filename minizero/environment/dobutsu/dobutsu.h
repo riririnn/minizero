@@ -28,8 +28,7 @@ const int kDobutsuHistory = 1;
 const int kDobutsuNumPiecePlane = 5;
 const int kDobutsuNumRepetitionPlane = 2;                                                                              // the third occurrence ends the game
 const int kDobutsuChannelsPerStep = 2 * kDobutsuNumPiecePlane + kDobutsuNumRepetitionPlane + 2 * kDobutsuNumDroppable; // 18
-const int kDobutsuNumInputChannels = kDobutsuHistory * kDobutsuChannelsPerStep + 2;                                    // 20
-const float kDobutsuMoveCountScale = 512.0f;
+const int kDobutsuNumInputChannels = kDobutsuHistory * kDobutsuChannelsPerStep + 1;                                    // 19: + Player1 to move
 
 enum class PieceType {
     kGiraffe = 0,
