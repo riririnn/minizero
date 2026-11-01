@@ -386,6 +386,7 @@ private:
     std::vector<Board> board_history_;
     std::vector<int> repetition_history_;
     std::map<uint64_t, int> board_hash_history_;
+    int move_offset_ = 0; // moves played before a position given by SFEN (its move number - 1), for the move-count plane
 };
 
 // --- EnvLoader ---
