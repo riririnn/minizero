@@ -2,6 +2,7 @@
 
 #include "bitboard.h"
 #include "stochastic_env.h"
+#include <deque>
 #include <algorithm>
 #include <string>
 #include <unordered_map>
