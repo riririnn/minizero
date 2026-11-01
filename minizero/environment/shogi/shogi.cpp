@@ -15,6 +15,7 @@ void ShogiEnv::reset() {
     actions_.clear();
     observations_.clear();
     turn_ = Player::kPlayer1;
+    move_offset_ = 0;
     setLegalAction();
     board_history_.clear();
     repetition_history_.clear();
@@ -32,6 +33,7 @@ void ShogiEnv::clearBoard() {
     actions_.clear();
     observations_.clear();
     turn_ = Player::kPlayer1;
+    move_offset_ = 0;
     legal_action_.reset();
     board_history_.clear();
     repetition_history_.clear();
@@ -60,8 +62,10 @@ bool ShogiEnv::setFromSFEN(const std::string& sfen)
 
     std::istringstream iss(sfen);
     std::string board_str, turn_str, hand_str;
+    int move_number = 1;
     if (!(iss >> board_str >> turn_str)) { return false; }
-    if (!(iss >> hand_str)) { hand_str = "-"; } // 手数フィールドは無視
+    if (!(iss >> hand_str)) { hand_str = "-"; }
+    if (!(iss >> move_number)) { move_number = 1; } // SFEN counts the initial position as move 1
 
     board_.init(); // 空盤・持ち駒0・ビットボード初期化
 
@@ -137,6 +141,7 @@ bool ShogiEnv::setFromSFEN(const std::string& sfen)
     end_reason_.clear();
     actions_.clear();
     observations_.clear();
+    move_offset_ = std::max(move_number - 1, 0); // the move-count plane counts the moves played, as in a game record
     setLegalAction();
     board_history_.clear();
     repetition_history_.clear();
@@ -323,6 +328,9 @@ bool ShogiEnv::isTerminal() const {
 }
 
 float ShogiEnv::getEvalScore(bool is_resign) const {
+    // a resignation is the loss of the side to move (base_actor.cpp writes this as the RE of a
+    // self-play game that did not end by the rules); it used to fall through to 0, a draw
+    if (is_resign && winner_ == GameResult::UNDECIDED) { return turn_ == Player::kPlayer1 ? -1.0f : 1.0f; }
     return (winner_ == GameResult::BLACK_WON) ? 1.0f : (winner_ == GameResult::WHITE_WON) ? -1.0f : 0.0f;
 }
 
@@ -445,7 +453,7 @@ std::vector<float> ShogiEnv::getFeatures(utils::Rotation rotation) const {
               features.begin() + (turn_channel + 1) * board_area, turn_val);
 
     int move_channel = turn_channel + 1;
-    float move_count_val = static_cast<float>(actions_.size()) / 512.0f;
+    float move_count_val = static_cast<float>(actions_.size() + move_offset_) / 512.0f;
     std::fill(features.begin() + move_channel * board_area,
               features.begin() + (move_channel + 1) * board_area, move_count_val);
 
