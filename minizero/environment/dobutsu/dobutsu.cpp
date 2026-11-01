@@ -341,7 +341,6 @@ std::vector<float> DobutsuEnv::getFeatures(utils::Rotation rotation) const
 
     const int global = kDobutsuHistory * kDobutsuChannelsPerStep;
     std::fill_n(features.begin() + global * area, area, turn_ == Player::kPlayer1 ? 1.0f : 0.0f);
-    std::fill_n(features.begin() + (global + 1) * area, area, static_cast<float>(actions_.size()) / kDobutsuMoveCountScale);
     return features;
 }
 
