@@ -123,7 +123,9 @@ if [[ ${run_stage,} == "r" ]]; then
 elif [[ ${run_stage,} == "c" ]]; then
 	# count the games, not the models: a finished iteration always leaves one sgf,
 	# while model files may have been pruned to save disk
-	zero_start_iteration=$(($(ls ${train_dir}/sgf/ | grep -c ".sgf$") + 1))
+	# "|| true": grep -c exits 1 when it counts zero, and set -e would end the script
+	# here without a word (a folder seeded from a pretrained model has no games yet)
+	zero_start_iteration=$(($(ls ${train_dir}/sgf/ | grep -c ".sgf$" || true) + 1))
 	model_file=$(ls ${train_dir}/model/ | grep ".pt$" | sort -V | tail -n1)
 	new_configure_file=$(basename ${train_dir}/*.cfg)
 	echo y | ${sp_executable_file} -gen ${train_dir}/${new_configure_file} -conf_file ${train_dir}/${new_configure_file} -conf_str "${overwrite_conf_str}" 2>/dev/null
