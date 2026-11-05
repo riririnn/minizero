@@ -121,11 +121,12 @@ if [[ ${run_stage,} == "r" ]]; then
 	cuda_devices=$(echo ${gpu_list} | awk '{ split($0, chars, ""); printf(chars[1]); for(i=2; i<=length(chars); ++i) { printf(","chars[i]); } }')
 	echo "train \"\" -1 -1" | CUDA_VISIBLE_DEVICES=${cuda_devices} PYTHONPATH=. python ${op_executable_file} ${game_type} ${train_dir} ${train_dir}/${new_configure_file} >/dev/null 2>&1
 elif [[ ${run_stage,} == "c" ]]; then
-	# count the games, not the models: a finished iteration always leaves one sgf,
-	# while model files may have been pruned to save disk
-	# "|| true": grep -c exits 1 when it counts zero, and set -e would end the script
-	# here without a word (a folder seeded from a pretrained model has no games yet)
-	zero_start_iteration=$(($(ls ${train_dir}/sgf/ | grep -c ".sgf$" || true) + 1))
+	# count the iterations whose optimization finished, not the game files: self-play opens the
+	# iteration's sgf when it starts, so a stop during self-play or optimization leaves that file
+	# behind, and counting it would skip that iteration's training. "|| true": grep -c exits 1 when
+	# it counts zero (and 2 without a Training.log, as in a folder seeded from a pretrained model),
+	# and set -e would end the script here without a word
+	zero_start_iteration=$(( $(grep -c "\[Optimization\] Finished\." ${train_dir}/Training.log 2>/dev/null || true) + 1 ))
 	model_file=$(ls ${train_dir}/model/ | grep ".pt$" | sort -V | tail -n1)
 	new_configure_file=$(basename ${train_dir}/*.cfg)
 	echo y | ${sp_executable_file} -gen ${train_dir}/${new_configure_file} -conf_file ${train_dir}/${new_configure_file} -conf_str "${overwrite_conf_str}" 2>/dev/null
