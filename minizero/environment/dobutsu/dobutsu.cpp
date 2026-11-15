@@ -299,7 +299,7 @@ int DobutsuEnv::repetitionCountAt(int index) const
 std::vector<float> DobutsuEnv::getFeatures(utils::Rotation rotation) const
 {
     /*
-       20 channels (kDobutsuHistory = 1). For each history step t (t = 0 is now), at t * 18:
+       19 channels (kDobutsuHistory = 1). For each history step t (t = 0 is now), at t * 18:
           0~ 4. pieces of the side to move: giraffe, elephant, chick, hen, lion
           5~ 9. opponent pieces, same order
          10~11. repetition: plane 10 + (occurrences so far, capped at 2) - 1
@@ -307,7 +307,7 @@ std::vector<float> DobutsuEnv::getFeatures(utils::Rotation rotation) const
          15~17. opponent hand
        then
             18. 1 if Player1 is to move, else 0
-            19. plies played / 512
+       (no move-count plane: dobutsu has no move cap, and the complete analysis has no move number)
        Every step is seen from the side to move now: for Player2 the board is
        turned 180 degrees, as in shogi.cpp.
     */
