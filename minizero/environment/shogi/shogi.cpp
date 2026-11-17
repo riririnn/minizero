@@ -327,6 +327,9 @@ bool ShogiEnv::isTerminal() const {
     return winner_ != GameResult::UNDECIDED;
 }
 
+// float ShogiEnv::getEvalScore(bool is_resign) const {
+//     return (winner_ == GameResult::BLACK_WON) ? 1.0f : (winner_ == GameResult::WHITE_WON) ? -1.0f : 0.0f;
+// }
 float ShogiEnv::getEvalScore(bool is_resign) const {
     // a resignation is the loss of the side to move (base_actor.cpp writes this as the RE of a
     // self-play game that did not end by the rules); it used to fall through to 0, a draw
